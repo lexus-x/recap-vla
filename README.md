@@ -1,8 +1,20 @@
-# VLA Novelty Mission — Multi-Agent Discovery Run (2026-07-10)
+# RECAP — REcovery via Checked, Anchored Postconditions
 
-An autonomous multi-agent research pipeline that mined, audited, and adversarially stress-tested
-**67 candidate mechanisms** for improving sub-500M Vision-Language-Action (VLA) robot policies —
-and reported honestly on what survived.
+**A plug-in verify-and-retry layer for frozen sub-500M Vision-Language-Action (VLA) policies**, and the
+complete record of the multi-agent discovery run that selected it: **67 candidate mechanisms** mined from
+14 non-VLA domains, audited against prior art, screened through six gates, and adversarially debated.
+
+![RECAP architecture](figures/fig6_recap_architecture.svg)
+
+**How RECAP works:** ~1.5M-parameter probes read the frozen VLA's own internal features and check
+*declarative* (looked-up, not predicted) postconditions after each subtask — did the drawer actually open?
+is the object actually in the gripper? A violation triggers a scripted retreat-and-reattempt. Long-horizon
+tasks fail multiplicatively (10 subgoals at p=0.93 ⇒ ~49% — our measured baseline); one verified retry
+lifts each subgoal to p(2−p), attacking exactly that structure.
+
+> **Status: pre-experimental.** This repository contains the discovery record, the verified novelty
+> position (thin-delta — see below), and pre-registered experiment plans. **No GPU experiments have run
+> yet**; the first (zero-GPU) diagnostic is Step 0a in the roadmap. Nothing here claims measured gains.
 
 > **Headline result: zero of 67 mechanisms fully survived a Q1-journal-grade adversarial review.**
 > Four passed all six screening gates; all four were killed in debate with substantive, checkable defects.
@@ -23,6 +35,18 @@ and reported honestly on what survived.
 | Every gate verdict / debate transcript / committee score | [`artifacts/`](artifacts/) (JSON) |
 | The orchestration code that ran the pipeline | [`workflows/`](workflows/) |
 | The prior verified landscape this run built on | [`background/research-direction-report.md`](background/research-direction-report.md) |
+| All figures as standalone SVGs | [`figures/`](figures/) |
+
+## Figures
+
+| | |
+|---|---|
+| **Fig 1 — What's broken in current VLAs** (documented success-rate collapses) | ![fig1](figures/fig1_bottlenecks.svg) |
+| **Fig 2 — The discovery funnel** (67 → 63 → 4 → 0) | ![fig2](figures/fig2_pipeline_funnel.svg) |
+| **Fig 3 — Where ideas died** (failures per gate) | ![fig3](figures/fig3_gate_failures.svg) |
+| **Fig 4 — RECAP mechanism loop** (simplified) | ![fig4](figures/fig4_recap_mechanism.svg) |
+| **Fig 5 — Committee top 10** | ![fig5](figures/fig5_top10_ranking.svg) |
+| **Fig 6 — RECAP full architecture** | ![fig6](figures/fig6_recap_architecture.svg) |
 
 ## Context
 

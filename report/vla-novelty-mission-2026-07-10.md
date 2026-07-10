@@ -1,4 +1,4 @@
-# VLA Novelty Mission — Full Report (2026-07-10)
+# RECAP (R4) — VLA Novelty Mission Full Report (2026-07-10)
 
 > Autonomous multi-agent discovery run: 14-domain landscape scan → novelty audit → six-gate screen → 3-round adversarial debates → revision round (2 independent surgeons) → second gate/debate pass → ranking committee → implementation planning.
 > Models: Sonnet workers, Fable 5 judges (Opus 4.8 x-high fallback). ~4.8M tokens. All numbers below trace to run logs or fetched sources; no estimates presented as measurements.

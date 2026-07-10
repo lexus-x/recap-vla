@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#52514e"/></marker>
+    <marker id="arrb" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2a78d6"/></marker>
+    <marker id="arrg" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#006300"/></marker>
+    <marker id="arrr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#d03b3b"/></marker>
+  </defs>
+  <rect x="0" y="0" width="920" height="560" fill="#fcfcfb"/>
+  <text x="20" y="28" font-size="15" font-weight="650" fill="#0b0b0b">RECAP architecture — REcovery via Checked, Anchored Postconditions</text>
+  <text x="20" y="46" font-size="10" fill="#52514e">A plug-in verification-and-retry layer around a frozen sub-500M VLA. Blue = the only new trainable parts (~1.5M params, +0.3%). Gray = untouched.</text>
+
+  <!-- ===== Inputs ===== -->
+  <rect x="20" y="80" width="120" height="88" rx="8" fill="none" stroke="#c3c2b7" stroke-width="1.4"/>
+  <text x="80" y="100" font-size="10.5" font-weight="600" text-anchor="middle" fill="#0b0b0b">Observations</text>
+  <text x="80" y="116" font-size="9" text-anchor="middle" fill="#52514e">agent-view camera</text>
+  <text x="80" y="130" font-size="9" text-anchor="middle" fill="#52514e">wrist camera</text>
+  <text x="80" y="144" font-size="9" text-anchor="middle" fill="#52514e">proprioception</text>
+  <text x="80" y="158" font-size="9" text-anchor="middle" fill="#52514e">instruction (text)</text>
+
+  <!-- ===== Frozen SmolVLA ===== -->
+  <rect x="180" y="66" width="330" height="150" rx="10" fill="#f5f5f3" stroke="#c3c2b7" stroke-width="1.4"/>
+  <text x="345" y="86" font-size="11" font-weight="650" text-anchor="middle" fill="#0b0b0b">SmolVLA 450M — FROZEN ❄</text>
+  <rect x="196" y="98" width="90" height="46" rx="6" fill="#fcfcfb" stroke="#c3c2b7" stroke-width="1.2"/>
+  <text x="241" y="117" font-size="9" text-anchor="middle" fill="#0b0b0b">SigLIP vision</text>
+  <text x="241" y="130" font-size="9" text-anchor="middle" fill="#52514e">encoder · 86M</text>
+  <rect x="300" y="98" width="90" height="46" rx="6" fill="#fcfcfb" stroke="#c3c2b7" stroke-width="1.2"/>
+  <text x="345" y="117" font-size="9" text-anchor="middle" fill="#0b0b0b">SmolLM2</text>
+  <text x="345" y="130" font-size="9" text-anchor="middle" fill="#52514e">text model · 361M</text>
+  <rect x="404" y="98" width="90" height="46" rx="6" fill="#fcfcfb" stroke="#c3c2b7" stroke-width="1.2"/>
+  <text x="449" y="113" font-size="9" text-anchor="middle" fill="#0b0b0b">Flow-matching</text>
+  <text x="449" y="126" font-size="9" text-anchor="middle" fill="#52514e">action expert</text>
+  <text x="449" y="138" font-size="9" text-anchor="middle" fill="#52514e">·100M</text>
+  <line x1="286" y1="121" x2="298" y2="121" stroke="#52514e" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="390" y1="121" x2="402" y2="121" stroke="#52514e" stroke-width="1.2" marker-end="url(#arr)"/>
+  <!-- feature tap -->
+  <circle cx="345" cy="160" r="5" fill="#2a78d6"/>
+  <line x1="345" y1="144" x2="345" y2="155" stroke="#2a78d6" stroke-width="1.6"/>
+  <text x="356" y="164" font-size="9" fill="#1c5cab" font-weight="600">internal-feature tap (pooled hidden states — no extra forward pass)</text>
+
+  <line x1="140" y1="124" x2="178" y2="124" stroke="#52514e" stroke-width="1.4" marker-end="url(#arr)"/>
+
+  <!-- ===== Action chunk / execution ===== -->
+  <rect x="560" y="88" width="120" height="58" rx="8" fill="none" stroke="#c3c2b7" stroke-width="1.4"/>
+  <text x="620" y="110" font-size="10" font-weight="600" text-anchor="middle" fill="#0b0b0b">Action chunk</text>
+  <text x="620" y="126" font-size="9" text-anchor="middle" fill="#52514e">50 steps · executed</text>
+  <text x="620" y="138" font-size="9" text-anchor="middle" fill="#52514e">per current subgoal</text>
+  <line x1="510" y1="117" x2="558" y2="117" stroke="#52514e" stroke-width="1.4" marker-end="url(#arr)"/>
+
+  <rect x="740" y="88" width="150" height="58" rx="8" fill="none" stroke="#c3c2b7" stroke-width="1.4"/>
+  <text x="815" y="110" font-size="10" font-weight="600" text-anchor="middle" fill="#0b0b0b">Environment</text>
+  <text x="815" y="126" font-size="9" text-anchor="middle" fill="#52514e">LIBERO-Long / Meta-World</text>
+  <text x="815" y="138" font-size="9" text-anchor="middle" fill="#52514e">(sim, MuJoCo)</text>
+  <line x1="680" y1="117" x2="738" y2="117" stroke="#52514e" stroke-width="1.4" marker-end="url(#arr)"/>
+  <!-- env feedback loop to observations -->
+  <path d="M 815 88 L 815 60 L 80 60 L 80 78" fill="none" stroke="#52514e" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+  <text x="620" y="57" font-size="8.5" text-anchor="middle" fill="#898781">next observations (closed loop)</text>
+
+  <!-- ===== RECAP layer ===== -->
+  <rect x="180" y="250" width="710" height="180" rx="10" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.6"/>
+  <text x="196" y="272" font-size="11.5" font-weight="650" fill="#1c5cab">RECAP layer — trainable additions 🔥 ~1.5M params · inference-time only · backbone untouched</text>
+
+  <!-- probe bank -->
+  <rect x="196" y="286" width="200" height="120" rx="8" fill="#fcfcfb" stroke="#2a78d6" stroke-width="1.4"/>
+  <text x="296" y="306" font-size="10" font-weight="600" text-anchor="middle" fill="#0b0b0b">Probe bank (trainable)</text>
+  <text x="296" y="324" font-size="9" text-anchor="middle" fill="#52514e">object-pose regressor (MLP)</text>
+  <text x="296" y="339" font-size="9" text-anchor="middle" fill="#52514e">gripper-state classifier</text>
+  <text x="296" y="354" font-size="9" text-anchor="middle" fill="#52514e">contact / containment predicates</text>
+  <text x="296" y="376" font-size="8.5" text-anchor="middle" fill="#898781">trained once on cached features +</text>
+  <text x="296" y="388" font-size="8.5" text-anchor="middle" fill="#898781">sim-state labels · ~2 A100-hours</text>
+
+  <!-- postcondition table -->
+  <rect x="420" y="286" width="190" height="120" rx="8" fill="#fcfcfb" stroke="#2a78d6" stroke-width="1.4"/>
+  <text x="515" y="306" font-size="10" font-weight="600" text-anchor="middle" fill="#0b0b0b">Postcondition table</text>
+  <text x="515" y="322" font-size="9" text-anchor="middle" fill="#52514e">declarative lookup · 0 params</text>
+  <text x="515" y="342" font-size="8.5" text-anchor="middle" fill="#0b0b0b" font-family="Consolas, monospace">"open the drawer" →</text>
+  <text x="515" y="355" font-size="8.5" text-anchor="middle" fill="#52514e" font-family="Consolas, monospace">drawer_joint &gt; θ</text>
+  <text x="515" y="371" font-size="8.5" text-anchor="middle" fill="#0b0b0b" font-family="Consolas, monospace">"pick up the bowl" →</text>
+  <text x="515" y="384" font-size="8.5" text-anchor="middle" fill="#52514e" font-family="Consolas, monospace">in_gripper(bowl)=true</text>
+
+  <!-- verifier + retry controller -->
+  <rect x="634" y="286" width="240" height="120" rx="8" fill="#fcfcfb" stroke="#2a78d6" stroke-width="1.4"/>
+  <text x="754" y="306" font-size="10" font-weight="600" text-anchor="middle" fill="#0b0b0b">Verifier + retry controller</text>
+  <text x="754" y="322" font-size="9" text-anchor="middle" fill="#52514e">state machine · 0 params</text>
+  <text x="644" y="344" font-size="9" fill="#006300" font-weight="600">✓ pass → advance subgoal pointer</text>
+  <text x="644" y="362" font-size="9" fill="#d03b3b" font-weight="600">✗ fail → scripted retreat (lift/back-off)</text>
+  <text x="662" y="376" font-size="9" fill="#52514e">→ re-issue subtask (max 1 retry)</text>
+  <text x="644" y="394" font-size="9" fill="#52514e">2nd fail → continue + log (no deadlock)</text>
+
+  <!-- wires into RECAP -->
+  <path d="M 345 165 L 345 240 L 296 240 L 296 284" fill="none" stroke="#2a78d6" stroke-width="1.6" marker-end="url(#arrb)"/>
+  <text x="352" y="236" font-size="8.5" fill="#1c5cab">features at subtask boundary</text>
+  <line x1="396" y1="346" x2="418" y2="346" stroke="#2a78d6" stroke-width="1.4" marker-end="url(#arrb)"/>
+  <text x="407" y="338" font-size="8" text-anchor="middle" fill="#1c5cab"> </text>
+  <line x1="610" y1="346" x2="632" y2="346" stroke="#2a78d6" stroke-width="1.4" marker-end="url(#arrb)"/>
+  <!-- instruction into table -->
+  <path d="M 80 168 L 80 460 L 515 460 L 515 408" fill="none" stroke="#898781" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+  <text x="300" y="472" font-size="8.5" fill="#898781">instruction selects the subgoal's postconditions</text>
+
+  <!-- retry loop back to expert -->
+  <path d="M 754 284 L 754 230 L 449 230 L 449 146" fill="none" stroke="#d03b3b" stroke-width="1.5" marker-end="url(#arrr)"/>
+  <text x="600" y="226" font-size="9" fill="#d03b3b" font-weight="600">retry: re-issue subtask from retreat pose</text>
+  <!-- pass continues -->
+  <path d="M 874 346 L 906 346 L 906 117 L 892 117" fill="none" stroke="#006300" stroke-width="1.5" marker-end="url(#arrg)"/>
+  <text x="906" y="238" font-size="9" fill="#006300" font-weight="600" transform="rotate(-90 906 238)">pass: continue task</text>
+
+  <!-- footer math -->
+  <text x="20" y="512" font-size="10" fill="#0b0b0b" font-weight="600">Why it works on long-horizon tasks:</text>
+  <text x="20" y="528" font-size="9.5" fill="#52514e">failures compound multiplicatively — 10 subgoals at p=0.93 each ⇒ 0.93¹⁰ ≈ 49% task success (our measured baseline).</text>
+  <text x="20" y="543" font-size="9.5" fill="#52514e">One verified retry lifts each subgoal to p(2−p): 0.93 → 0.995, and the task ceiling to ≈ 95% — the mechanism attacks the exact structure of the measured gap.</text>
+</svg>

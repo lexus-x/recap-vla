@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="130" viewBox="0 0 660 130" role="img" aria-label="Idea funnel"><rect x="0" y="0" width="660" height="130" fill="#fcfcfb"/>
+      <g font-size="9" font-family="system-ui, sans-serif">
+        <text x="150" y="20" text-anchor="end" fill="#0b0b0b">Ideas generated</text>
+        <rect x="160" y="10" width="440" height="15" rx="4" fill="#86b6ef"/>
+        <text x="594" y="21" text-anchor="end" fill="#0b0b0b" font-weight="600">67</text>
+        <text x="150" y="50" text-anchor="end" fill="#0b0b0b">Reached the six gates</text>
+        <rect x="160" y="40" width="414" height="15" rx="4" fill="#5598e7"/>
+        <text x="568" y="51" text-anchor="end" fill="#ffffff" font-weight="600">63</text>
+        <text x="150" y="80" text-anchor="end" fill="#0b0b0b">Passed all six gates</text>
+        <rect x="160" y="70" width="26" height="15" rx="4" fill="#2a78d6"/>
+        <text x="192" y="81" fill="#0b0b0b" font-weight="600">4</text>
+        <text x="150" y="110" text-anchor="end" fill="#0b0b0b">Survived the debates</text>
+        <rect x="160" y="100" width="2" height="15" fill="#1c5cab"/>
+        <text x="168" y="111" fill="#0b0b0b" font-weight="600">0</text>
+      </g>
+    </svg>
