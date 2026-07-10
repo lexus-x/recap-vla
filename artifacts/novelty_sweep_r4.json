@@ -1,0 +1,455 @@
+{
+ "verdict": {
+  "verdict": "PARTIAL_THIN_DELTA",
+  "reasoning": "No single work covers all four components, so SCOOPED is off the table: no hit combines (a) as worded \u2014 a postcondition/subgoal-success probe on the frozen VLA's OWN internal features \u2014 with (b) a scripted physical retreat-and-reattempt. ProbeAct's probe is geometric (object 3D positions) and its recovery is a continuous CBF filter; HELM's verifier is an external MLP over observation/action/subgoal/memory context, not VLA internals; Agentic Robot's verifier is an external fine-tuned VLM. However, the field brackets the claim from both sides, and the verified evidence makes the residual delta thin. HELM (abstract fetched and confirmed via Semantic Scholar; the searcher input contained one confessed hallucination so single-source kills were verified) already delivers a learned failure verifier + physical rollback-and-replan recovery + LIBERO-Long + explicit same-budget comparison + a quantified three-gap failure breakdown (41% memory / 33% verification / 26% recovery), plus releases LIBERO-Recovery infrastructure \u2014 it lacks only the internal-feature probe. ProbeAct already delivers probe-on-frozen-internals triggering autonomous online correction on a LIBERO variant. Agentic Robot already delivers verifier-triggered scripted recovery (gripper lift + retry) on LIBERO-Long. VLA-Corrector (also verified) delivers a frozen-backbone latent monitor + triggered corrective replanning + LIBERO + call-efficiency accounting. Every pairwise combination of the four axes exists; only the exact four-way conjunction is open, and its defensibility for RA-L/TMLR depends on execution: the paper MUST run budget-matched head-to-heads against an external-verifier trigger (HELM/Agentic-Robot-style) and a continuous-correction baseline (ProbeAct-style), must use or engage HELM's LIBERO-Recovery protocol, and must distinguish its taxonomy from HELM's gap breakdown and ReViP's false-completion benchmark suite. Without those comparisons reviewers will read the work as a recombination of published parts. The claim survives only with the narrowed wording below; do not claim novelty for any individual component \u2014 (a) alone is established (SAFE, AEGIS, What-Frozen-VLAs-Know, VLAConf, VLA-FAIL), verifier-triggered recovery on LIBERO is established (HELM, Agentic Robot, B2FF), quantified failure taxonomies are established (HELM, RoboFail, benchmarking papers), and budget-matched accounting is established (HELM, AEGIS, FAR).",
+  "surviving_delta": "To our knowledge, this is the first system in which a learned subgoal-postcondition probe reading a frozen VLA's own internal features \u2014 rather than an external VLM, an observation-level verifier (HELM, Agentic Robot), or a geometric object-position probe (ProbeAct) \u2014 directly triggers an autonomous scripted retreat-and-reattempt recovery, evaluated on LIBERO-Long under matched timestep budgets against both external-verifier-triggered and continuous-correction baselines, together with a quantified taxonomy of silent postcondition violations.",
+  "must_cite": [
+   "HELM: Harness-Enhanced Long-horizon Memory (arXiv 2604.18791)",
+   "ProbeAct: Probe-Guided Training-Free Failure Recovery (arXiv 2606.09740)",
+   "SAFE: Multitask Failure Detection for VLA Models (arXiv 2506.09937, NeurIPS 2025)",
+   "Agentic Robot: Brain-Inspired Framework (arXiv 2505.23450)",
+   "AEGIS: A Backup Reflex for Physical AI (arXiv 2606.06660)",
+   "What Frozen VLAs Already Know About Success (arXiv 2605.28527)",
+   "VLA-Corrector: Lightweight Detect-and-Correct Inference (arXiv 2607.01804)",
+   "Back to the Familiar Future / B2FF (arXiv 2606.09258)",
+   "Foresight: Failure Detection with World Model Latents (arXiv 2606.23085)",
+   "Rewind-IL: Online Failure Detection and State Respawning (arXiv 2604.16683)",
+   "ReViP: Mitigating False Completion (arXiv 2601.16667)",
+   "How Visible Are Silent Manipulation Failures? (arXiv 2606.03134)",
+   "VLAConf: Calibrated Task-Success Confidence (arXiv 2605.29605)",
+   "VLA-FAIL: Efficient Task Failure Detection (arXiv 2606.21386)",
+   "Hide-and-Seek in Trajectories (arXiv 2605.30834)",
+   "FAR: Failure-Aware Retry (arXiv 2607.01111)",
+   "SeqVLA: Completion-Aware VLA (arXiv 2509.14138)",
+   "ARMADA (arXiv 2510.02298, RA-L 2026)"
+  ],
+  "kill_papers": [
+   "HELM (arXiv 2604.18791) \u2014 verified: LIBERO-Long + matched-budget + physical rollback + quantified failure taxonomy; lacks only the internal-feature probe",
+   "ProbeAct (arXiv 2606.09740) \u2014 probe on frozen VLA internals already triggers autonomous recovery on LIBERO-plus; probe is geometric and recovery is continuous CBF, not scripted retreat",
+   "Agentic Robot (arXiv 2505.23450) \u2014 scripted recovery + retry on LIBERO-Long already exists, triggered by external VLM verifier",
+   "VLA-Corrector (arXiv 2607.01804) \u2014 verified: frozen-backbone latent monitor + triggered corrective replanning + LIBERO + efficiency accounting; correction is gradient guidance, not scripted retreat"
+  ]
+ },
+ "hits": [
+  {
+   "paper": "ProbeAct: Probe-Guided Training-Free Failure Recovery in Vision-Language-Action Models",
+   "id_or_venue": "arXiv 2606.09740",
+   "what_it_does": "Trains a lightweight multi-target hidden-state probe on a frozen VLA (predicts 3D positions of task-relevant objects from intermediate features) to detect grasp/transport/placement failures, then corrects actions via a hierarchical Control Barrier Function filter that encodes repeated-failure locations as soft safe-set constraints. Evaluated on LIBERO-plus, improves OpenVLA-OFT from 69.6%->74.1%.",
+   "overlap_assessment": "Covers (a) fully -- probe on frozen VLA's own internal features, not external VLM. Covers (c) partially -- LIBERO-plus but no explicit matched-timestep-budget accounting confirmed. Does NOT cover (b) -- correction is continuous CBF-based action steering, not a scripted discrete physical retreat-and-reattempt. Does NOT cover (d) -- no formal quantified taxonomy of silent postcondition violations, only named failure categories in passing. Closest single paper on the (a) premise; the mechanism for (b) is a different design choice (soft constraint vs. scripted retreat) that a paper could legitimately argue against.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "SAFE: Multitask Failure Detection for Vision-Language-Action Models",
+   "id_or_venue": "arXiv 2506.09937 (NeurIPS 2025)",
+   "what_it_does": "MLP/LSTM head trained on the last-layer latent features of a frozen VLA (OpenVLA, pi0, pi0-FAST) to predict a scalar failure-likelihood score. Evaluated on LIBERO, SimplerEnv, and real Franka.",
+   "overlap_assessment": "Covers (a) and (c) cleanly -- internal-feature probe on frozen backbone, LIBERO benchmark. Explicitly does NOT cover (b): the paper states the signal only supports 'stop, backtrack, or ask for help' -- no autonomous scripted recovery is executed or evaluated. Does NOT cover (d): qualitative failure examples only, no quantified taxonomy. Must be cited as the closest precedent establishing (a)+(c) is already done; the paper under test must clearly add the retry-loop and taxonomy on top.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "Agentic Robot: A Brain-Inspired Framework for Vision-Language-Action Models in Embodied Agents",
+   "id_or_venue": "arXiv 2505.23450",
+   "what_it_does": "Adds a fine-tuned Qwen2.5-VL-3B external VLM as a 'temporal verifier' that checks subgoal completion from camera frames; on failure it triggers a scripted recovery action (lift the gripper vertically) before retrying the subgoal. Evaluated on all four LIBERO suites (Spatial/Object/Goal/Long), 79.6% average success.",
+   "overlap_assessment": "Covers (b) and (c) closely -- scripted physical recovery triggered by a verifier, LIBERO-Long included, though no explicit matched-timestep-budget accounting (only verification-frequency ablation). Does NOT cover (a): detection is via an external fine-tuned VLM (Qwen2.5-VL), not a probe on the frozen VLA's own internal features -- this is exactly the distinction the claim's parenthetical '(not an external VLM/detector)' is designed to exclude. Does NOT cover (d): only a coarse two-way 'stuck vs still-trying' split, no quantified taxonomy. This is the single closest match on the retry/recovery+LIBERO axis; the paper under test must lean hard on 'internal frozen-VLA probe' as the differentiator from this and must not undersell how close the experimental design otherwise is.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "ActProbe: Action-Space Probe for Early Failure Detection",
+   "id_or_venue": "arXiv 2606.08508",
+   "what_it_does": "Learned probe on frozen VLA action-space/hidden features for early failure prediction (before failure occurs), trained without ground-truth failure labels. Evaluated on LIBERO with explicit timestep-budget framing (early detection saves wasted timesteps). Distinguishes several failure categories (task execution, safety-critical, confidence-based).",
+   "overlap_assessment": "Covers (a) and (c) closely, including timestep-budget-aware framing. Does NOT cover (b): detection-only, no autonomous recovery/retry action described. Partially touches (d) via multiple failure categories but not a quantified taxonomy specifically of silent postcondition violations. Must-cite for the (a)+(c) combination.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "VLA-Corrector: Lightweight Detect-and-Correct Inference for Adaptive Action Horizon",
+   "id_or_venue": "arXiv 2607.01804",
+   "what_it_does": "A ~40M-param Latent-space Vision Monitor (LVM) trained on frozen VLA encoder features detects drift between predicted and actual visual latent evolution (a postcondition-style deviation signal); on persistent drift, Online Gradient Guidance injects a corrective gradient into new action generation (not a scripted retreat). Evaluated on MetaWorld, LIBERO, and real AgileX robot, with success-per-policy-call efficiency tables. Section 10.4 documents a real-world failure breakdown (workspace limits, contact-geometry issues, visual ambiguity, representation limits of the frozen backbone).",
+   "overlap_assessment": "Covers (a) (probe on frozen encoder features, postcondition-like drift signal), (c) (LIBERO + call-count/efficiency accounting), and a version of (d) (documented failure breakdown, though not framed as 'silent postcondition violations' taxonomy). Does NOT cover (b): correction is continuous latent-gradient steering, not a discrete scripted physical retreat-and-reattempt. Three of four axes are present in some form with a different recovery mechanism -- this is a strong must-cite / near-major-overlap paper.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "What Frozen VLAs Already Know About Success: A Probing Study of Value-Like Structure in Foundation Robot Policies",
+   "id_or_venue": "arXiv 2605.28527",
+   "what_it_does": "Trains linear probes on frozen VLA features to recover Monte-Carlo success/progress targets from mixed successful and failed trajectories on LIBERO-Goal, showing frozen internal representations already encode value-like success signal.",
+   "overlap_assessment": "Foundational precedent for (a) (probe on frozen internal features, LIBERO) but purely a probing/analysis study -- no recovery mechanism (b), no timestep-budget accounting (c) beyond using LIBERO-Goal, and no failure taxonomy (d). Must-cite as the premise-validating prior work the paper under test builds on.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "VLAConf: Calibrated Task-Success Confidence for Vision-Language-Action Models",
+   "id_or_venue": "arXiv 2605.29605",
+   "what_it_does": "Learned confidence probe/classifier on frozen VLA internal representation space, producing calibrated task-success confidence scores for downstream decision-making (e.g., human-in-the-loop handoff).",
+   "overlap_assessment": "Covers (a) only (frozen-feature probe). No recovery/retry (b), benchmark and timestep accounting unclear from available text, no taxonomy (d). Must-cite as adjacent probe-based prior art.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "Back to the Familiar Future: Failure Recovery for VLA Policies via Pre-Imagined Milestone Selection",
+   "id_or_venue": "arXiv 2606.09258",
+   "what_it_does": "On a bounded off-trajectory perturbation (gripper/object XY offset, laydown), a learned selector picks the best-matching pre-imagined milestone image from a 'familiar future bank' and the frozen VLA denoises actions toward that visual subgoal -- an implicit, vision-guided recovery, not physical retreat. Evaluated on Failure-injected LIBERO (150 episodes/suite) plus real-world, with explicit latency/timestep accounting (recovery window of 5 action chunks, ~2.15s vs ~7.57s for re-planning).",
+   "overlap_assessment": "Covers (c) closely (LIBERO-class + matched-budget/latency accounting) but detection is not probe-based (uses failure injection, not internal-feature probes) so (a) is not met; recovery is milestone re-anchoring, not scripted physical retreat-and-reattempt, so (b) is not met; explicitly excludes irreversible/silent failure categories, so (d) is not met -- it is the closest paper on the (c) 'matched-timestep-budget' axis specifically. Must-cite for benchmark/accounting methodology comparison.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "Hide-and-Seek in Trajectories: Discovering Failure Signals for VLA Runtime Monitoring",
+   "id_or_venue": "arXiv 2605.30834",
+   "what_it_does": "Formulates failure detection as coarsely-supervised contrastive learning (inter/intra-trajectory objectives) to localize failure-indicative actions from trajectory-level labels alone, without step-level annotation or external models. Evaluated on LIBERO, VLABench, and real robot across OpenVLA/pi0/pi0.5.",
+   "overlap_assessment": "Likely covers (a)-adjacent (internal, non-external-model detection) and (c) (LIBERO). No recovery/retry mechanism (b) and no quantified taxonomy (d) confirmed. Must-cite for runtime-monitoring framing.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "ReViP: Mitigating False Completion in Vision-Language-Action Models with Vision-Proprioception Rebalance",
+   "id_or_venue": "arXiv 2601.16667",
+   "what_it_does": "Targets 'false completion' -- the policy internally believing a task succeeded when it didn't, i.e. exactly the silent-postcondition-violation phenomenon -- and fixes it architecturally via progress-aware visual cues that rebalance semantic-perception vs. proprioceptive-dynamics coupling, rather than detecting-and-recovering post hoc. Introduces a dedicated False-Completion Benchmark Suite (8 tasks x 3 perturbations: Object Drop, Distractor Swap, Relayout) plus LIBERO and RoboTwin 2.0. Identifies 'state-dominant bias' as the root failure pattern.",
+   "overlap_assessment": "Conceptually the closest paper to (d)'s core phenomenon (silent postcondition/false-completion failures) and shares benchmark territory with (c), but the mechanism is a training-time architectural fix, not a frozen-backbone test-time probe (a) or a scripted retreat-and-reattempt recovery (b). No probe, no retry loop, no backbone-frozen constraint claimed. Must-cite: a paper proposing a 'taxonomy of silent postcondition violations' needs to distinguish itself from ReViP's false-completion framing and benchmark suite explicitly.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "FAR: Failure-Aware Retry for Test-Time Recovery and Continual Policy Improvement",
+   "id_or_venue": "arXiv 2607.01111",
+   "what_it_does": "Test-time retry framework: on failure (detected via environment feedback/time limits, not an internal probe), the robot resets to its initial configuration and retries using a policy updated online via Failure-Contrastive Preference Adaptation (gradient steps on failed-trajectory contrastive pairs). Evaluated on ManiSkill, RoboSuite, RoboMimic (not LIBERO) plus real xArm, with success-vs-timestep-budget curves.",
+   "overlap_assessment": "Covers 'retry after failure' framing and partial timestep-budget accounting (c-adjacent) but explicitly has no internal-feature-probe detection (a) -- authors state it lacks a 'principled failure detection mechanism.' Recovery involves online gradient updates to the policy (violates any frozen-backbone premise) rather than a scripted physical retreat (b), and benchmark is not LIBERO. No taxonomy (d). Must-cite as the closest 'retry-loop with timestep accounting' precedent despite the mechanism differing throughout.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "FailSafe: Reasoning and Recovery from Failures in Vision-Language-Action Models",
+   "id_or_venue": "arXiv 2510.01642",
+   "what_it_does": "Fine-tunes LLaVA-OneVision-7B to generate diverse failure cases paired with executable recovery actions, improving 3 SOTA VLA models by up to 22.6% on ManiSkill.",
+   "overlap_assessment": "Detection/reasoning is via a fine-tuned external VLM, not a frozen-VLA internal probe (a not met). Benchmark is ManiSkill, not LIBERO (c not met as specified). Recovery-action generation is VLM-reasoning-based, not confirmed as scripted physical retreat (b uncertain, likely not met). No confirmed taxonomy of silent postcondition violations specifically. Must-cite as recovery-generation prior art but low direct overlap with the exact combination.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "RoboFail: Analyzing Failures in Robot Learning Policies",
+   "id_or_venue": "arXiv 2412.02818",
+   "what_it_does": "Expert-defined taxonomy of 8 failure modes across 100 simulated + 30 real-world long-horizon kitchen manipulation demonstrations, with failure timestamps and expert-annotated failure reasons (diagnostic dataset, not a live probe+recovery system).",
+   "overlap_assessment": "Covers (d)'s general spirit (a quantified failure-mode taxonomy) but is a static diagnostic dataset, not a taxonomy derived from a frozen-VLA internal probe operating live, and has no recovery mechanism (b) or matched-timestep-budget LIBERO evaluation (c). This is the kind of 'REFLECT/DoReMi-class' work the claim already expects as partial overlap. Must-cite for taxonomy-methodology comparison.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "RePO-VLA: Recovery-Driven Policy Optimization for Vision-Language-Action Models",
+   "id_or_venue": "arXiv 2605.09410",
+   "what_it_does": "Policy-optimization method that biases actions toward a learned success manifold, explicitly without online failure detectors or heuristic retries; raises adversarial success 20%->75%.",
+   "overlap_assessment": "Explicitly states it has NO failure detector and NO retry mechanism -- authors position it as an alternative to detect-and-recover approaches. Also requires backbone/policy training, conflicting with any frozen-backbone premise. Does not overlap with (a) or (b) by the authors' own framing. Adjacent-only, low direct threat but worth citing as a contrasting design philosophy.",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "SeqVLA: Sequential Task Execution for Long-Horizon Manipulation with Completion-Aware Vision-Language-Action Model",
+   "id_or_venue": "arXiv 2509.14138",
+   "what_it_does": "Adds a lightweight subtask-completion detection head to pi0 that triggers autonomous transitions between subtasks in a long-horizon sequence; investigates frozen-backbone vs. full-finetune variants of the detection head.",
+   "overlap_assessment": "Detects subtask completion (postcondition-adjacent) using an added head, with a frozen-backbone finetuning variant explicitly studied -- overlaps with (a) in spirit. But its purpose is forward sequencing/transition triggering, not failure-triggered recovery -- no retreat-and-reattempt recovery (b), no LIBERO-Long timestep-budget accounting confirmed (c uncertain), no taxonomy (d). Named explicitly in the search angle; must-cite as the nearest 'completion-detection head' prior art, though its target problem (sequencing, not failure recovery) differs from the claim.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "VLA-FAIL: Efficient Task Failure Detection for Finetuned Vision-Language-Action Models",
+   "id_or_venue": "arXiv 2606.21386",
+   "what_it_does": "Title indicates efficient failure detection for finetuned VLA models; full text could not be fetched (file too large) so mechanism, benchmark, recovery, and taxonomy details are unconfirmed.",
+   "overlap_assessment": "Unconfirmed overlap on all four axes -- flagged for the orchestrator to re-check directly given the title strongly suggests (a)-adjacent territory (failure detection on a VLA).",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "RoboFAC: A Comprehensive Framework for Robotic Failure Analysis and Correction",
+   "id_or_venue": "arXiv 2505.12224",
+   "what_it_does": "VLM-based framework/dataset for robotic failure analysis and correction (per search snippet), in the REPLAN/RACER family of VLM-guided precondition-error detection and recovery-instruction generation.",
+   "overlap_assessment": "Detection/correction is VLM-guided (external), not a frozen-VLA internal probe (a not met). Not independently verified for (b)/(c)/(d). Same category as REFLECT/DoReMi already flagged as expected partial overlap in the claim. Adjacent, must-cite-adjacent.",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "Failing Forward: Adaptive Failure-Informed Learning for Vision-Language-Action Models",
+   "id_or_venue": "arXiv 2605.08434",
+   "what_it_does": "Uses failure signals (normally discarded) during VLA training to learn about unsafe actions and recovery strategies -- a training-time / learning-from-failure approach.",
+   "overlap_assessment": "Training-time use of failure data, not a frozen-backbone test-time probe+retry system. Does not overlap with (a)/(b) as specified (implies backbone gradients, conflicting with any frozen premise). Low direct overlap; adjacent.",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "SAFE: Multitask Failure Detection for Vision-Language-Action Models",
+   "id_or_venue": "arXiv:2506.09937 (NeurIPS 2025)",
+   "what_it_does": "Trains a lightweight classifier/LSTM head on top of frozen VLA internal features (tested on OpenVLA, pi0, pi0-FAST) to predict a scalar task-failure likelihood, generalizing to unseen tasks/environments. Motivates use so 'the robot can stop, backtrack, or ask for help.' Now cited by newer work (ActProbe) as the SOTA 'white-box VLA failure detection' baseline (SAFE-LSTM/SAFE-MLP).",
+   "overlap_assessment": "Directly covers (a) \u2014 learned probe on frozen VLA's own internal features for success/failure signal, multitask, sim+real. Does NOT implement or evaluate an actual scripted retreat-and-reattempt recovery loop (only motivates stopping/backtracking as future use, not built/tested) \u2014 (b) absent. Benchmark coverage vs LIBERO-Long specifically and matched-timestep-budget accounting unconfirmed from abstract \u2014 likely (c) partial at best. No taxonomy of silent postcondition violations \u2014 (d) absent. This is the closest single prior work for component (a) alone and must be cited/differentiated against.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "ProbeAct: Probe-Guided Training-Free Failure Recovery in Vision-Language-Action Models",
+   "id_or_venue": "arXiv:2606.09740 (June 2026)",
+   "what_it_does": "Training-free runtime framework: (i) a lightweight hidden-state probe on frozen VLA features predicting 3D positions of task-relevant objects, (ii) an object-agnostic kinematic state machine detecting grasp/transport/placement failure from gripper+end-effector kinematics, (iii) a hierarchical Control-Barrier-Function filter that minimally corrects actions in repeated-failure regions. Evaluated on LIBERO-plus, improves OpenVLA-OFT 69.6%->74.1%.",
+   "overlap_assessment": "Closest combined-mechanism match found: probe-on-frozen-features (a-adjacent, but probes object position not postcondition/success directly) + failure detection + intervention (b-adjacent, but recovery is a continuous CBF safety filter, not a scripted discrete retreat-and-reattempt) + LIBERO-plus (c-adjacent, a perturbation-robustness LIBERO variant, not explicitly the long-horizon class, and no stated matched-timestep-budget accounting). No taxonomy of silent postcondition violations as quantified failure-mode evidence \u2014 (d) absent. Must be discussed explicitly; the residual delta hinges on 'postcondition-semantic probe + discrete scripted retreat + taxonomy' vs their 'geometry probe + continuous CBF correction.'",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "AEGIS: A Backup Reflex for Physical AI (Activation-probe Early-warning, Gated Inference Switching)",
+   "id_or_venue": "arXiv:2606.06660 (June 2026)",
+   "what_it_does": "A lightweight probe on a weak policy's frozen activations detects high-risk steps early; on a flag, control escalates to a stronger separate policy for just those steps. Evaluated on LIBERO-Spatial with rigorous pre-registered stats (McNemar tests, kill criteria): +5.4pp recovered-trajectory rate over budget-matched blind escalation.",
+   "overlap_assessment": "Covers (a) cleanly \u2014 probe on frozen activations predicting failure. Recovery mechanism is policy-switching/escalation, not a scripted physical retreat-and-reattempt \u2014 (b) differs in kind. Benchmark is LIBERO-Spatial, not the long-horizon LIBERO class, though budget-matched comparison methodology is present and rigorous (partial c). No taxonomy of silent postcondition violations \u2014 (d) absent. Notably rigorous statistical protocol is a strong methodological neighbor worth positioning against even though the recovery mechanism differs.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "What Frozen VLAs Already Know About Success: A Probing Study of Value-Like Structure in Foundation Robot Policies",
+   "id_or_venue": "arXiv:2605.28527 (May 2026)",
+   "what_it_does": "Linear probes on frozen OpenVLA/Pi0.5/DINOv2/CLIP features recover Monte-Carlo success/outcome targets from LIBERO-Goal trajectories (~92% pairwise ordering accuracy under same-task/same-timestep controls). Used as a test-time selector over sampled Pi0.5 action prefixes, raising push-plate success 26.7%->44.3%.",
+   "overlap_assessment": "Strong match for (a) \u2014 probe on frozen VLA features for success prediction, with careful same-task/same-timestep controls (methodologically close to 'matched-timestep-budget accounting' in spirit). But intervention is a test-time action-prefix reranking/selector, not a scripted physical retreat-and-reattempt after a postcondition violation \u2014 (b) absent. No taxonomy of failure modes \u2014 (d) absent. Benchmark is LIBERO-Goal, not explicitly the long-horizon suite \u2014 (c) partial.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "VLAConf: Calibrated Task-Success Confidence for Vision-Language-Action Models",
+   "id_or_venue": "arXiv:2605.29605",
+   "what_it_does": "One-class discriminative confidence head on frozen pretrained VLA internal representations, single forward pass, step-conditioned modeling for anomaly/confidence scoring; evaluated on LIBERO benchmark and real robot, better inference efficiency than resampling-based confidence methods.",
+   "overlap_assessment": "Covers (a) \u2014 frozen-feature probe for step-wise success/anomaly confidence, LIBERO benchmark (c-partial, LIBERO not confirmed as long-horizon suite). No recovery mechanism reported (b absent), no failure taxonomy (d absent).",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "Foresight: Failure Detection for Long-Horizon Robotic Manipulation with Action-Conditioned World Model Latents",
+   "id_or_venue": "arXiv:2606.23085 (June 2026)",
+   "what_it_does": "Failure detector using latent representations from an action-conditioned world model built on top of VLA policies; trained on final-outcome labels only; calibrated via functional conformal prediction. Evaluated on LIBERO-Long, ManiSkill-Long, and BEHAVIOR-1K in sim, plus real-robot validation (ReactorX-200, Franka).",
+   "overlap_assessment": "Directly hits (c) \u2014 LIBERO-Long, the long-horizon suite named in the claim, with a comparison against SOTA failure-detection baselines. But the representation used is a separate action-conditioned world model's latents, not literally the VLA's own frozen internal features being probed \u2014 (a) only partially satisfied. No recovery action implemented \u2014 (b) absent. No quantified taxonomy of silent postcondition violations \u2014 (d) absent. Must be cited and distinguished on the (a) and (b)+(d) axes.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "Hide-and-Seek in Trajectories: Discovering Failure Signals for VLA Runtime Monitoring",
+   "id_or_venue": "arXiv:2605.30834 (May 2026)",
+   "what_it_does": "Coarsely-supervised (trajectory-level-label-only) failure detection via inter-/intra-trajectory contrastive objectives that localize failure-indicative actions without step-level annotation. Evaluated on LIBERO, VLABench, and a real robot across OpenVLA, pi0, pi0.5.",
+   "overlap_assessment": "Covers detection generalization and includes LIBERO (c-partial) across multiple frozen-backbone VLA policies, but the mechanism is trajectory/action-level contrastive learning rather than a probe reading the VLA's frozen internal feature space directly \u2014 (a) partial. No recovery trigger (b absent), no taxonomy (d absent).",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "Back to the Familiar Future (B2FF): Failure Recovery for VLA Policies via Pre-Imagined Milestone Selection",
+   "id_or_venue": "arXiv:2606.09258 (June 2026)",
+   "what_it_does": "Recovery framework: VLA pre-generates a bank of 'familiar future' milestone states; on failure, a recoverability-aware selector picks a milestone and enforces it as a fixed visual goal to guide the policy back on-trajectory, without finetuning the low-level action generator. On failure-injected LIBERO with controlled recovery timing, raises baseline VLA success 56.3%->74.0%.",
+   "overlap_assessment": "Strong match for (b)'s spirit (a triggered recovery behavior on a failure-injected LIBERO benchmark, c-partial) but the recovery is visual-goal re-conditioning via imagined milestones, not a scripted physical retreat-and-reattempt, and detection/triggering assumes injected failures rather than a probe reading postconditions from frozen features \u2014 (a) absent. No taxonomy (d) reported. A key comparator for reporting-style (delta success-rate under controlled failure injection).",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "How Visible Are Silent Manipulation Failures? An Observability Study of False-Success Detection in Simulated Robot Episodes",
+   "id_or_venue": "arXiv:2606.03134 (June 2026)",
+   "what_it_does": "Studies 'false success' episodes (robot's own success check wrongly flags success) on two bimanual ALOHA tasks; perturbation-induced failures, privileged-simulator ground truth; compares proprioception-only vs vision-based detectors for recoverability of the mislabeled success signal.",
+   "overlap_assessment": "This is the closest work found to the (d) 'silent postcondition violation' framing conceptually \u2014 it is literally about false/silent success detection \u2014 but it does not use a frozen VLA's internal features (uses raw proprioception/vision detectors), is not on LIBERO, and has no recovery mechanism or scripted retreat. Not a taxonomy of failure-mode categories either \u2014 more an observability/recoverability study of one failure type (false success) on two tasks. Useful citation to differentiate 'observability study' from 'quantified taxonomy as evidence for a method.'",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "VLA-FAIL: Efficient Task Failure Detection for Finetuned Vision-Language-Action Models",
+   "id_or_venue": "arXiv:2606.21386 (June 2026)",
+   "what_it_does": "Lightweight failure detection combining Last-Layer Mahalanobis Distance (OOD detection on last-layer features) and Action Chunk Consistency (temporal overlap consistency across receding-horizon action chunks); no failure data required.",
+   "overlap_assessment": "Targets finetuned VLAs specifically (title), and detection is via distributional/consistency statistics on internal features rather than a trained postcondition-success probe. No recovery mechanism, no LIBERO-long confirmation, no taxonomy. Adjacent rather than core overlap given the finetuned-model framing conflicts with this project's frozen-backbone constraint.",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "FailSafe: Reasoning and Recovery from Failures in Vision-Language-Action Models",
+   "id_or_venue": "arXiv:2510.01642 (Oct 2025)",
+   "what_it_does": "Failure-generation-and-recovery data pipeline; fine-tunes a separate LLaVA-OneVision-7B into FailSafe-VLM that detects failures and proposes/executes recovery actions, improving Pi-0-FAST/OpenVLA/OpenVLA-OFT by up to 22.6% on ManiSkill.",
+   "overlap_assessment": "Combines detection+recovery (a+b in spirit) but explicitly via an EXTERNAL fine-tuned VLM reasoning module, not a probe on the acting VLA's own frozen internal features \u2014 this is precisely the category the claim excludes ('not an external VLM/detector'). Evaluated on ManiSkill, not LIBERO-class long-horizon. No taxonomy. Supports rather than threatens the claim's novelty, but must be cited as the nearest 'external-VLM' analog to contrast against.",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "Guardian: Detecting Robotic Planning and Execution Errors with Vision-Language Models",
+   "id_or_venue": "arXiv:2512.01946",
+   "what_it_does": "External VLM inserted at each planning/subtask step to detect failures and trigger replanning or re-execution of the corresponding motion policy.",
+   "overlap_assessment": "Detection+recovery loop (a+b in spirit) but explicitly external-VLM-based, not a frozen-VLA-internal-feature probe \u2014 falls in the excluded category by the claim's own definition. Benchmark/taxonomy unconfirmed. Adjacent, low direct threat, useful as a contrast citation.",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "RePO-VLA: Recovery-Driven Policy Optimization for Vision-Language-Action Models",
+   "id_or_venue": "arXiv:2605.09410 (May 2026)",
+   "what_it_does": "Trains value-conditioned recovery behavior using dense progress labels so the policy uses a learned value function to guide recovery actions, without relying on an explicit separate failure-detection step.",
+   "overlap_assessment": "Recovery-oriented but requires training/value-function learning integrated into the policy (recovery is learned/optimized, not a scripted retreat-and-reattempt), and does not center on a frozen-feature postcondition probe as the trigger. Likely requires backbone/policy gradients, conflicting with the frozen-backbone framing this project needs anyway. Adjacent.",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "FAR: Failure-Aware Retry for Test-Time Recovery and Continual Policy Improvement",
+   "id_or_venue": "arXiv:2607.01111v1 (July 2026)",
+   "what_it_does": "For diffusion policies (not VLAs): trains its own IQL-style critic to identify failure-inducing actions, retries by resetting to initial configuration, and performs 5-10 gradient steps of test-time adaptation on the policy itself; evaluated on ManiSkill/RoboSuite/RoboMimic with timestep-budget-matched success-rate comparisons.",
+   "overlap_assessment": "Retreat-to-initial-configuration + retry loop (b-like) with timestep-budget accounting methodology (c-like practice) \u2014 but requires backbone gradient updates (explicitly finetunes the policy at test time), is not a VLA, not evaluated on LIBERO, and the failure signal comes from a separately-trained critic, not a probe on frozen VLA features. Adjacent on methodology (budget-matched retry evaluation) but wrong model class and violates the frozen-backbone premise.",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "AEGIS: A Backup Reflex for Physical AI",
+   "id_or_venue": "arXiv:2606.06660",
+   "what_it_does": "Trains a lightweight probe on a weak policy's FROZEN activations to detect high-risk steps early, then escalates control to a stronger separate policy for just those steps. Evaluated on LIBERO-Spatial with rigorous budget-matched comparisons (blind escalation, random-trigger placebo controls at the same 38% activation budget), pre-registered analysis plan, McNemar tests. AEGIS recovers 10.1% of trajectories the weak policy loses vs 4.6%/5.1% for budget-matched controls.",
+   "overlap_assessment": "Strong match on (a)-style mechanism (probe on frozen policy activations predicting failure) and a genuine matched-budget evaluation methodology (close cousin of (c)'s 'matched-timestep-budget accounting', though the match is compute-budget not timestep-budget and on LIBERO-Spatial not long-horizon LIBERO-Long). Does NOT match (b): recovery is policy-switching/escalation to a stronger policy, not a scripted physical retreat-and-reattempt. Explicitly excludes LIBERO-Long from main runs ('pre-registration named LIBERO-Long ... as candidate long-horizon suites' but excluded for being 'out of the weak-failure window'), so (c)'s long-horizon requirement is not met. No taxonomy of silent postcondition violations (d) \u2014 confirmed via full-text check: 'postcondition'/'subgoal' terms do not appear, no quantified failure taxonomy.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "ProbeAct: Probe-Guided Training-Free Failure Recovery in Vision-Language-Action Models",
+   "id_or_venue": "arXiv:2606.09740",
+   "what_it_does": "Lightweight multi-target hidden-state probe on frozen VLA features predicting 3D positions of task-relevant objects, combined with a Control Barrier Function (CBF) filter that minimally corrects actions in real time. Raises OpenVLA-OFT success on LIBERO-plus from 69.6% to 74.1%. Defines qualitative failure categories (hard/soft empty grasp, mid-transport drop) via gripper-width/end-effector heuristics.",
+   "overlap_assessment": "Matches (a) reasonably (probe on frozen VLA hidden states) though the probe predicts object geometry rather than postcondition/subgoal success directly. Does NOT match (b): recovery is a continuous CBF action-correction filter, not a scripted physical retreat-and-reattempt \u2014 confirmed via full text (no discrete retreat maneuver, just per-step action projection). Failure categories are named but NOT quantified with counts/frequencies (partial d at best \u2014 'no frequency statistics are provided'). Timestep-budget accounting is confounded, not matched: baseline failed episodes consume the full 600-step timeout while rescued episodes average 197 steps, so \u044d\u0442\u043e not a clean matched-budget design per (c). LIBERO-plus, not confirmed as long-horizon-specific.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "SAFE: Multitask Failure Detection for Vision-Language-Action Models",
+   "id_or_venue": "arXiv:2506.09937",
+   "what_it_does": "Foundational multitask failure detector: learns from VLA internal features (OpenVLA, \u03c00, \u03c00-FAST) to predict a single scalar failure-likelihood, trained on successful+failed rollouts, evaluated for generalization to unseen tasks in sim and real, using conformal prediction for the accuracy/detection-time tradeoff.",
+   "overlap_assessment": "Cleanest single match to leg (a) alone (probe reading a frozen VLA's own internal features, not an external VLM/detector) \u2014 near-certainly already known to the project as the seminal work in this line. Does NOT implement any recovery/retry mechanism itself (abstract only motivates that a detector 'allows the robot to stop, backtrack, or ask for help' \u2014 no scripted retreat implemented); no LIBERO-long-horizon-specific matched-budget evaluation confirmed; no taxonomy of silent postcondition violations. Must be cited as prior art for (a) regardless of overlap on (b)-(d).",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "HELM: Harness-Enhanced Long-horizon Memory for Vision-Language-Action Manipulation",
+   "id_or_venue": "arXiv:2604.18791",
+   "what_it_does": "Model-agnostic execution harness with three parts: Episodic Memory Module (CLIP-indexed keyframes), a learned State Verifier (SV, a 3-layer MLP over observation+action+subgoal+memory context, NOT reading the VLA's own frozen hidden activations) that predicts action failure pre-execution, and a Harness Controller that performs rollback (retrieve last checkpoint, issue goal-conditioned 'return to the state shown' recovery sequence) and replanning. On LIBERO-LONG: 58.4%\u219281.5% success over OpenVLA, with an explicit same-rollout-budget comparison against LoRA adaptation ('OpenVLA+LoRA(50K) uses the same rollout budget as SV training, enabling a fair same-budget comparison'). Releases LIBERO-Recovery, a perturbation-injection protocol for evaluating recovery. Full-text failure breakdown: of 83 failed episodes, 41% memory-gap, 33% verification-gap, 26% recovery-gap failures (18% multi-mode).",
+   "overlap_assessment": "Closest single-paper combination found: strong match to (c) (LIBERO-LONG specifically, WITH an explicit matched-budget comparison against a baseline) and to (d) (a quantified failure-mode taxonomy with percentages, though framed as memory/verification/recovery 'gaps' rather than 'silent postcondition violations' per se). Partial match to (b): the Harness Controller's rollback is a genuine physical return-to-a-prior-state maneuver, but it is goal-conditioned/generative ('issue a goal-conditioned recovery sequence') rather than a hard-coded SCRIPTED retreat. Does NOT match (a) as specified: the State Verifier is an externally-trained MLP over observation/action/subgoal/memory context, not a probe reading the frozen VLA's own internal features \u2014 closer to the claim's excluded 'SuccessVQA-style success detection' category. Also introduces LIBERO-Recovery as public infrastructure, which is directly relevant prior art regardless of citation outcome. This is the single strongest threat to the claim's residual novelty and should be read in full, not just abstract.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "Back to the Familiar Future (B2FF): Failure Recovery for VLA Policies via Pre-Imagined Milestone Selection",
+   "id_or_venue": "arXiv:2606.09258",
+   "what_it_does": "Generates a bank of 'familiar future' milestone images from the clean initial observation before execution; at recovery time a recoverability-aware selector picks a milestone and enforces it as a fixed visual goal. On failure-injected LIBERO, raises a baseline VLA from 56.3% to 74.0%. Recovery entry uses either the known injected-perturbation timestep or a human-annotated failure-onset point (Standard LIBERO).",
+   "overlap_assessment": "Does not match (a): no probe on frozen internal features \u2014 uses pre-generated goal images, and recovery-entry detection in 'Standard LIBERO' relies on human annotation, not a learned violation detector. Does not match (b): recovery enforces a generated visual goal, not a scripted physical retreat-and-reattempt. Partial match to (c): failure-injected LIBERO, but budget-matching not confirmed. No taxonomy (d).",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "Foresight: Failure Detection for Long-Horizon Robotic Manipulation with Action-Conditioned World Model Latents",
+   "id_or_venue": "arXiv:2606.23085",
+   "what_it_does": "Failure detector using latent representations from a separate action-conditioned world model (not the VLA's own frozen features), trained only on final task-level success/failure labels, calibrated via functional conformal prediction. Evaluated on LIBERO-Long, ManiSkill-Long, and BEHAVIOR-1K plus real robots.",
+   "overlap_assessment": "Strong match on the benchmark half of (c) (LIBERO-Long specifically, long-horizon), but the detector reads a separate world-model's latents, not the frozen VLA's own internal features, so (a) is not met as specified. No recovery mechanism (b). No taxonomy of silent postcondition violations confirmed (d). Detection-only paper; relevant as a strong 'detection on LIBERO-Long' precedent to cite and distinguish from.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "Rewind-IL: Online Failure Detection and State Respawning for Imitation Learning",
+   "id_or_venue": "arXiv:2604.16683",
+   "what_it_does": "Training-free safeguard for action-chunked policies: a zero-shot failure detector (Temporal Inter-chunk Discrepancy Estimate, self-consistency across overlapping action chunks, calibrated with split conformal prediction) combined with state-respawning that rewinds execution to the latest VLM-identified (offline) semantically-verified safe checkpoint, using a frozen policy encoder to build the checkpoint feature database.",
+   "overlap_assessment": "Partial match to (a): uses a frozen policy encoder for checkpoint features, but the online detector itself is a self-consistency signal (TIDE) rather than a trained postcondition/success probe, and checkpoint identification is done offline by an external VLM \u2014 violating the 'not an external VLM/detector' condition. Partial match to (b): 'state-respawning' rewinds to a prior state, conceptually retreat-like, but is a learned/semantic rewind to a stored checkpoint rather than a scripted physical retreat maneuver. Long-horizon manipulation tasks used but LIBERO-specific matched-budget accounting not confirmed. No taxonomy (d).",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "VLA-FAIL: Efficient Task Failure Detection for Finetuned Vision-Language-Action Models",
+   "id_or_venue": "arXiv:2606.21386",
+   "what_it_does": "Two lightweight failure detectors requiring no failure data: last-layer Mahalanobis distance (LLMD) on frozen last-layer VLA features for OOD detection, and action-chunk-consistency (ACC) exploiting receding-horizon overlap. Introduces AUCPDT metric jointly capturing precision/recall/detection-time.",
+   "overlap_assessment": "Solid match to (a) (probe/statistical detector directly on frozen VLA's own last-layer features). No recovery mechanism (b). Benchmark not confirmed as LIBERO long-horizon specifically, no matched-budget accounting confirmed (c), no taxonomy (d). Cite as prior art for the detection-only half of the claim.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "What Frozen VLAs Already Know About Success: A Probing Study of Value-Like Structure in Foundation Robot Policies",
+   "id_or_venue": "arXiv:2605.28527",
+   "what_it_does": "Pure probing study: linear probes on frozen OpenVLA/Pi0.5/DINOv2/CLIP features recover Monte-Carlo success/outcome targets from LIBERO-Goal rollouts (~92% pairwise ordering accuracy for Pi0.5, controlled for task/temporal shortcuts). Used as a test-time selector over sampled action prefixes, raising push-plate success from 26.7% to 44.3%.",
+   "overlap_assessment": "Direct methodological match to (a) \u2014 this is essentially the canonical 'learned probe on a frozen VLA's own internal features predicting success' result the claim's (a) describes, on LIBERO-Goal (not long-horizon). No recovery/retreat mechanism (b) \u2014 uses resampling/selection among candidate action prefixes, not physical retreat. Not long-horizon, no matched-budget framing, no taxonomy (c,d absent). Must be cited as the closest prior demonstration that frozen-VLA probes carry success-relevant signal, which the claim's (a) builds directly on top of.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "How Visible Are Silent Manipulation Failures? An Observability Study of False-Success Detection in Simulated Robot Episodes",
+   "id_or_venue": "arXiv:2606.03134",
+   "what_it_does": "Studies false-success episodes (robot logs success but task outcome was wrong) on two bimanual ALOHA tasks (cube transfer, peg insertion), comparing how much of the information needed to overturn a false-success label is recoverable from proprioception alone vs requiring vision.",
+   "overlap_assessment": "Directly relevant to the 'silent postcondition violation' framing in (d) by name/theme, but provides no quantified taxonomy of violation TYPES (only a recoverability analysis of one failure category \u2014 false success), no probe-on-frozen-VLA-features mechanism, no recovery/retry, and no LIBERO or long-horizon evaluation. Cite for terminology/framing precedent on 'silent' failures, but does not overlap the actual (a)-(c) mechanisms.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "RePO-VLA: Recovery-Driven Policy Optimization for Vision-Language-Action Models",
+   "id_or_venue": "arXiv:2605.09410",
+   "what_it_does": "Trains a policy (Recovery-Aware Initialization + Progress-Aware Semantic Value Function + Value-Conditioned Refinement) to prefer high-progress actions, explicitly replacing online failure detectors/heuristic retries with a fixed high-value bias baked into the policy via training. Introduces FRBench, a recovery-focused benchmark with standardized error injection.",
+   "overlap_assessment": "Explicitly the opposite design point from the claim: '(recovery) at deployment ... without online failure detectors or heuristic retries' \u2014 this is a finetuning/policy-optimization recipe (likely requires backbone gradients, which would also put it out of scope per this project's frozen-backbone constraint), not a frozen-backbone probe+scripted-retry system. Low direct overlap with (a)/(b), but FRBench is a relevant recovery-evaluation benchmark to be aware of for (c)-adjacent framing.",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "VeriSpace: Spatially Grounded Action Verification for Vision-Language-Action Models",
+   "id_or_venue": "arXiv:2606.10568",
+   "what_it_does": "3D-aware external action verifier that scores candidate actions via scene encoding (visual+3D geometry) and spatially-grounded reasoning, used for test-time action selection among multiple VLA-proposed candidates.",
+   "overlap_assessment": "Explicitly an external verifier (its own encoder/reasoning module), not a probe on the frozen VLA's own internal features \u2014 fails (a) by the claim's own exclusion criterion. No scripted retreat-and-reattempt (b). Benchmark and budget-matching not confirmed as LIBERO long-horizon. Low overlap, adjacent to the 'external VLM/detector' category the claim already excludes.",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "What Frozen VLAs Already Know About Success: A Probing Study of Value-Like Structure in Foundation Robot Policies",
+   "id_or_venue": "arXiv 2605.28527",
+   "what_it_does": "Trains lightweight LINEAR PROBES on FROZEN VLA internal features (OpenVLA, Pi0.5, DINOv2, CLIP) to recover Monte-Carlo success/outcome targets from mixed successful+failed manipulation trajectories on LIBERO-Goal. Verified via direct abstract fetch (not just AI summary): probes reach ~92% pairwise ordering accuracy under same-task/same-timestep controls; used as a test-time selector over sampled Pi0.5 action prefixes, raising push-plate success 26.7%->44.3%.",
+   "overlap_assessment": "Covers (a) fully -- learned postcondition/success probe on a frozen VLA's own internal features -- and touches (c) since it's on LIBERO (though LIBERO-Goal, single-stage, not explicitly long-horizon LIBERO-Long with matched-timestep-budget accounting). Does NOT cover (b): no scripted physical retreat-and-reattempt, just test-time resampling of action prefixes (soft best-of-N, no physical retreat). Does NOT cover (d): no quantified taxonomy of failure modes (my first-pass WebFetch hallucinated 'silent postcondition violations' language when leadingly prompted; the verbatim abstract confirms no taxonomy claim -- flagging this correction explicitly). Closest single-paper match to (a); must be distinguished from the target claim on (b) and (d).",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "Rewind-IL: Online Failure Detection and State Respawning for Imitation Learning",
+   "id_or_venue": "arXiv 2604.16683",
+   "what_it_does": "Training-free online safeguard: TIDE failure detector monitors the policy's own internal self-consistency (disagreement between overlapping predicted action chunks in the temporal ensembler -- i.e., reads the policy's own internal state, not an external VLM). On detection, a 'state-respawning' mechanism has the robot PHYSICALLY execute a recovery action to steer back toward a previously-verified good state, then clears stale policy memory. Evaluated on 6 real-world bimanual tasks + RoboCasa sim (20-50 rollouts/task).",
+   "overlap_assessment": "Covers (a) [detector reads the policy's own internal consistency signal, arguably 'frozen internal features'] and (b) [physical steer-back-and-resume is functionally close to scripted retreat-and-reattempt] together in one system. Does NOT cover (c): evaluated on RoboCasa + real-world, explicitly NOT LIBERO, and no timestep-budget accounting reported. Does NOT cover (d): only qualitative failure examples (dropped objects, misaligned placements), no quantified taxonomy. This is the strongest (a)+(b) combination found across all searches -- the delta for the target claim rests entirely on porting this combination to LIBERO-class long-horizon with budget accounting plus adding the taxonomy.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "SAFE: Multitask Failure Detection for Vision-Language-Action Models",
+   "id_or_venue": "arXiv 2506.09937 (project page vla-safe.github.io)",
+   "what_it_does": "Extracts last-layer FROZEN VLA features and trains an MLP/LSTM detector to output a scalar failure-likelihood. Evaluated on LIBERO, SimplerEnv, and real Franka. Finds VLA internal features cluster similarly across tasks when the policy is about to fail (generic failure signal).",
+   "overlap_assessment": "Covers (a) [frozen-feature probe] and (c) [LIBERO]. Explicitly does NOT implement any triggered recovery -- 'the robot can stop, backtrack, or ask for help' is offered only as an unimplemented suggestion, not (b). No formal taxonomy, only anecdotal failure examples (stuck, missed grasp, knocked object) -- not (d). Must-cite prior art for the probe half of the claim.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "VLA-FAIL: Efficient Task Failure Detection for Finetuned Vision-Language-Action Models",
+   "id_or_venue": "arXiv 2606.21386",
+   "what_it_does": "Two failure detectors requiring no failure data: last-layer Mahalanobis distance (LLMD) on frozen VLA features for OOD detection, and action-chunk-consistency (ACC) exploiting receding-horizon overlap. Introduces AUCPDT metric trading off accuracy vs. detection latency.",
+   "overlap_assessment": "Covers (a) [frozen-feature-based OOD/failure detection]. No recovery mechanism found (no (b)), benchmark/LIBERO use and taxonomy not confirmed in available text (likely not (c)/(d) as a combination). Must-cite as a closely related frozen-feature failure-detection method.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "Hide-and-Seek in Trajectories: Discovering Failure Signals for VLA Runtime Monitoring",
+   "id_or_venue": "arXiv 2605.30834",
+   "what_it_does": "Frames failure detection as coarsely-supervised contrastive learning over trajectory-level (not step-level) labels to discover temporally-structured failure signals for OpenVLA/pi0/pi0.5, evaluated on LIBERO, VLABench, and a real robot; reports SOTA failure detection with accuracy-timeliness tradeoff under conformal prediction.",
+   "overlap_assessment": "Likely covers (a)+(c) [LIBERO, plausibly frozen-model signal extraction, though the exact mechanism -- whether it reads frozen internal activations vs. trains a separate head -- was not confirmed from the fetched content]. No recovery action mentioned -- not (b). No taxonomy -- not (d). Must-cite given LIBERO + multi-policy runtime-monitoring overlap; worth the writing team double-checking whether its signal source counts as 'the VLA's own internal features'.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "FLARE: A Failure-Aware Framework for Autonomous Correction and Recovery",
+   "id_or_venue": "CVPR 2026 (Zhao et al., openaccess.thecvf.com)",
+   "what_it_does": "Explicit ID/OOD failure TAXONOMY built via MLLM-based analysis of collected failure data; ID errors handled via perturbation/bridging augmentation for 'retry' ability, OOD errors handled via object-centric reset-skill data collection feeding a skill bank for closed-loop inference/recovery.",
+   "overlap_assessment": "Covers (d) [explicit ID/OOD taxonomy] and (b)-adjacent [retry + reset skills = a form of triggered recovery], but the failure-identification step uses an external MLLM analyzing collected data, not a learned probe reading the frozen VLA's own internal activations at runtime -- so (a) as specified is not met. Benchmark/LIBERO-match and timestep-budget accounting unconfirmed (PDF fetch blocked by CVPR paywall/403). Must-cite; worth a follow-up fetch given it pairs taxonomy + recovery, the two components rarest in combination.",
+   "threat_level": "major_overlap"
+  },
+  {
+   "paper": "Experiences from Benchmarking Vision-Language-Action Models for Robotic Manipulation",
+   "id_or_venue": "arXiv 2511.11298",
+   "what_it_does": "Real-world dual-arm ALOHA benchmark of ACT, OpenVLA-OFT (7B), RDT-1B, pi0 (3B) with a quantified two-level failure taxonomy: task-level (pre-grasp/grasp errors 32%, release/placement timing 18%, trajectory/state drift 15%, instruction mismatch 10%) and model-level (perception misalignment, temporal inconsistency, language grounding gaps, generalization breakdown).",
+   "overlap_assessment": "Strong instance of (d) [quantified taxonomy with percentages] but real-world ALOHA, not LIBERO -- not (c) as specified. No frozen-feature probes, no scripted recovery -- not (a)/(b). No sub-1B/sub-500M model included (RDT-1B is the smallest, still >=1B). Must-cite as the closest 'quantified taxonomy' precedent your (d) will be compared against.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "Benchmarking Vision-Language-Action Models on SO-101: Failure and Recovery Analysis",
+   "id_or_venue": "arXiv 2606.08881",
+   "what_it_does": "4-category failure taxonomy (Grasp Instability, Repetition Loop, State Mismatch, Precision Misalignment) across 320 episodes (4 policies x 4 tasks x 20 trials) on real SO-101 arm; measures 'recovery' as the policy's own innate ability to self-correct without external intervention (not a scripted mechanism).",
+   "overlap_assessment": "Covers (d) [structured taxonomy] and touches recovery framing, but recovery is passive/emergent, not (b) a scripted retreat-and-reattempt trigger. Not LIBERO -- not (c). No frozen-feature probes -- not (a). Must-cite as taxonomy prior art; clearly distinguishable since recovery isn't an intervention here.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "FailSafe: Reasoning and Recovery from Failures in Vision-Language-Action Models",
+   "id_or_venue": "arXiv 2510.01642",
+   "what_it_does": "A separate VLM (FailSafe-VLM) reasons about failures and computes a 7-DoF pose-difference recovery action via motion planning. Explicit injected 3-category taxonomy (translation/rotation/no-ops failure) over 131,000 synthetic failure-action pairs. Evaluated on ManiSkill (Pick/Push/Stack Cube), not LIBERO.",
+   "overlap_assessment": "Covers (b)-adjacent [computed pose-correction recovery, not scripted retreat] and a synthetic/injected version of (d). Explicitly uses an EXTERNAL VLM, not the frozen VLA's own internal features -- fails (a) by the claim's own carve-out language. Not LIBERO -- fails (c). Must-cite as an external-VLM recovery baseline to contrast against.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "ARMADA: Autonomous Online Failure Detection and Human Shared Control Empower Scalable Real-world Deployment and Adaptation",
+   "id_or_venue": "arXiv 2510.02298, accepted RA-L 2026",
+   "what_it_does": "FLOAT detector: online trajectory-embedding matching (optimal transport between rollout and expert policy embeddings) for failure detection (~95% accuracy), triggering human shared control/teleoperation intervention rather than autonomous recovery.",
+   "overlap_assessment": "Covers (a)-adjacent [policy-embedding-based detection, plausibly reads internal representations] but recovery is human-mediated, not scripted retreat -- fails (b). Not confirmed LIBERO, no taxonomy -- likely fails (c)/(d). Same target venue (RA-L 2026) as the project -- must-cite for venue-fit reasons alone.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "How Visible Are Silent Manipulation Failures? An Observability Study of False-Success Detection in Simulated Robot Episodes",
+   "id_or_venue": "arXiv 2606.03134",
+   "what_it_does": "Directly studies detectability of false-success/silent-failure episodes on bimanual ALOHA sim tasks (cube transfer, peg insertion), comparing proprioception-only vs. vision-based detectors trained against privileged-simulator success labels.",
+   "overlap_assessment": "Title/topic directly matches the 'silent postcondition violations' framing of (d), but the detectors are separate trained networks on proprioception/vision, not probes on the frozen VLA's own internal features -- not (a). Not LIBERO, no recovery mechanism -- not (c)/(b). Must-cite given near-identical framing language to the claim's (d); differentiate on the frozen-internal-feature requirement.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "SeqVLA: Sequential Task Execution for Long-Horizon Manipulation with Completion-Aware Vision-Language-Action Model",
+   "id_or_venue": "arXiv 2509.14138",
+   "what_it_does": "Adds a lightweight binary subtask-completion-detection head to pi0 for autonomous subgoal transitions; best (most decisive/reliable) results require JOINT FINETUNING of the backbone, not a frozen backbone. Evaluated on salad-packing (7 subtasks) and candy-packing (4 subtasks), not LIBERO.",
+   "overlap_assessment": "Explicitly named in the claim as an expected partial overlap. Confirms: covers subgoal-completion detection but via unfrozen/joint finetuning (violates the frozen-VLA requirement for the target project too, separately), not LIBERO, no scripted retreat, no taxonomy. Adjacent, cite as motivating/contrasting prior art.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "Back to the Familiar Future: Failure Recovery for VLA Policies via Pre-Imagined Milestone Selection",
+   "id_or_venue": "arXiv 2606.09258",
+   "what_it_does": "B2FF: pre-generates a bank of milestone/goal-images; on deviation, selects a milestone as a visual goal to guide recovery (image-conditioned replanning, not a scripted physical retreat). Evaluated on a 'failure-injected LIBERO' variant, improving UD-VLA 56.3%->74.0%.",
+   "overlap_assessment": "Covers (c)-adjacent [LIBERO-based, failure-injected] and (b)-adjacent [triggered recovery], but recovery is goal-image/milestone selection, not scripted retreat-and-reattempt, and detection mechanism / frozen-internal-feature use is unconfirmed. No quantified taxonomy (only aggregate success-rate deltas) -- not (d). No confirmed timestep-budget-matched accounting. Must-cite as a LIBERO-based recovery baseline.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "FPC-VLA: A Vision-Language-Action Framework with a Supervisor for Failure Prediction and Correction",
+   "id_or_venue": "arXiv 2509.04018",
+   "what_it_does": "A separate supervisor model queried at keyframes via vision-language prompts evaluates action viability and emits natural-language correction directives (direction/magnitude), fused into the action stream. Evaluated on SIMPLER and LIBERO across WidowX/Google Robot/Franka.",
+   "overlap_assessment": "Uses an EXTERNAL VLM supervisor, not probes on the frozen VLA's own internal features -- fails (a) per the claim's explicit carve-out ('not an external VLM/detector'). Correction is language-directive-based, not scripted physical retreat -- fails (b). LIBERO-evaluated -- touches (c). No taxonomy -- fails (d). Adjacent but cleanly distinguishable; must-cite as the nearest external-supervisor baseline.",
+   "threat_level": "must_cite"
+  },
+  {
+   "paper": "Guardian: Detecting Robotic Planning and Execution Errors with Vision-Language Models",
+   "id_or_venue": "arXiv 2512.01946",
+   "what_it_does": "External VLM inserted at each planning/subtask-execution step to detect failures and trigger replanning or re-execution of the corresponding motion policy.",
+   "overlap_assessment": "External-VLM detector (fails (a)'s frozen-internal-feature requirement) triggering replanning/re-execution (loosely (b)-adjacent, not a scripted retreat specifically). Benchmark/taxonomy unconfirmed. Adjacent.",
+   "threat_level": "adjacent"
+  },
+  {
+   "paper": "Failure-Aware Retry (FAR): Test-Time Recovery and Continual Policy Improvement",
+   "id_or_venue": "arXiv 2607.01111",
+   "what_it_does": "Failure-Contrastive Preference Adaptation combined with lightweight action perturbations during retries; explicitly reports evaluation 'under both reset and timestep budgets.'",
+   "overlap_assessment": "The 'reset and timestep budgets' phrasing is the closest match found anywhere in this search to the claim's 'matched-timestep-budget accounting' (c), but frozen-internal-feature probing (a), scripted-retreat specificity (b), LIBERO use, and any taxonomy (d) were not confirmed from the abstract alone. Flagging as adjacent pending a deeper fetch -- the other three searchers or a follow-up pass should verify this one specifically given the budget-accounting match.",
+   "threat_level": "adjacent"
+  }
+ ]
+}
