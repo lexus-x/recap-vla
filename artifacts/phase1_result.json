@@ -1,0 +1,1367 @@
+{
+ "bottlenecks": {
+  "bottlenecks": [
+   {
+    "name": "Perturbation robustness collapse (camera viewpoint & robot init-state worst)",
+    "evidence": "LIBERO-Plus (10,030 tasks, 7 perturbation dims, L1-L5 difficulty) on 10 VLAs: overall 95%\u2192<30% under modest perturbations. Camera viewpoint is the single worst factor: OpenVLA 76.5%\u21921.1% (-75.4pt), UniVLA 95.2%\u21924.3% (-90.9pt), Nora 87.9%\u21924.0% (-83.9pt). Robot initial-state: pi0 94.2%\u21926.6% (-87.6pt), OpenVLA-OFT_w 95.3%\u219243.7% (-51.6pt). Object layout milder: OpenVLA 76.5%\u219231.6% (-44.9pt), Nora 87.9%\u219263.9% (-24.0pt). Independently corroborated by LIBERO-PRO: models >90% under standard LIBERO collapse to 0.0% under a generalized-perturbation setting, exposing reliance on rote memorization of action sequences/layouts rather than task understanding.",
+    "citations": [
+     "arXiv:2510.13626 (LIBERO-Plus)",
+     "arXiv:2510.03827 (LIBERO-PRO)"
+    ],
+    "severity": "high \u2014 largest, most consistently reproduced effect size in the literature (up to -91pt); directly matches project's own robustness target dimension and is not on the killed-directions list"
+   },
+   {
+    "name": "Long-horizon task degradation",
+    "evidence": "SmolVLA (450M) scores 71% (self-reported, arXiv:2506.01844) / 49.0% (this project's own 100-rollout reproduction, seed 1000) on LIBERO-Long vs OpenVLA-OFT-7B 97.1% and pi0 85.2-94.2% on LIBERO-Long specifically (2511.11298-cited benchmarking context). A ~23-46pt gap that scales with chunk/horizon length rather than task complexity per se.",
+    "citations": [
+     "arXiv:2506.01844 (SmolVLA)",
+     "project baseline commit 1b45c4f"
+    ],
+    "severity": "high \u2014 the sharpest discriminative axis at sub-500M scale per the project's own target dimensions; standard LIBERO average is saturated (94-99%) so this is the only success-rate axis with headroom left"
+   },
+   {
+    "name": "Catastrophic forgetting of VLM semantic/reasoning capabilities during action fine-tuning",
+    "evidence": "Fine-tuning a VLM into a VLA on action data collapses general vision-language benchmarks: OpenVLA-7B vs its Prismatic VLM backbone \u2014 MMStar 38.8%\u21920% (-38.8pt), TextVQA 42.5%\u21920% (-42.5pt), DocVQA 17.5%\u21920% (-17.5pt), MMMU 35.0%\u219226.3% (-8.7pt). ECoT-7B: MMB-en 66.2%\u21923.7% (-62.5pt), MMB-cn 55.7%\u21924.1% (-51.6pt). Attributed to distribution mismatch between internet-scale VLM pretraining and narrow robot-action fine-tuning data overwriting semantic alignment.",
+    "citations": [
+     "arXiv:2509.22195 (Actions as Language / VLM2VLA)"
+    ],
+    "severity": "high \u2014 directly threatens generalization/instruction-following, matters to reviewers, and is distinct from the killed 'unfreeze + anti-collapse' direction (that was about frozen-feature information content, R^2=0.75; this is about semantic/VQA capability loss under full fine-tuning, which the project's frozen-backbone constraint already avoids by construction \u2014 worth citing as the reason the frozen-backbone constraint is well-motivated)"
+   },
+   {
+    "name": "Language-grounding shortcut / instruction ignorance",
+    "evidence": "LIBERO-Plus: models are 'largely insensitive to language variations... tend to ignore language instructions completely' \u2014 apparent robustness to paraphrase is actually failure to use language at all; models keep executing the original target action even when the instruction explicitly changes target object. ProGAL-VLA quantifies this directly: raises LIBERO-Plus robustness under robot perturbations from 30.3%\u219271.5% and 'reduces language ignorance by 3x-4x' by adding explicit grounded-goal verification. RoVLA independently targets the same failure mode with an 'Instructional Consistency' loss term on LIBERO-Plus.",
+    "citations": [
+     "arXiv:2510.13626 (LIBERO-Plus)",
+     "arXiv:2604.09824 (ProGAL-VLA)",
+     "arXiv:2605.19678 (RoVLA)"
+    ],
+    "severity": "medium-high \u2014 named independently by 3 recent papers (satisfies the '>=2 surveys' bar), not covered by any killed direction or crowded area in the brief, and is a distinct failure mode from generic perturbation robustness (it's a vision-action shortcut bypassing language conditioning entirely, not a perception/pose sensitivity issue)"
+   },
+   {
+    "name": "Inference latency / control frequency dominated by the frozen backbone",
+    "evidence": "RT-2 (55B): ~3Hz. OpenVLA (7B): ~5Hz. pi0 (3B, flow matching): ~10Hz. SmolVLA variants (0.24B/0.45B/2.25B) reach 15-30Hz on an RTX 4090 (non-arXiv source, roboticscenter.ai \u2014 flag as lower-confidence). Efficient-VLA survey states plainly: 'most latency comes from the language-model component,' motivating lighter-LM research; BitVLA quantization cuts OpenVLA memory 15.1GB\u21921.4GB without touching the latency-dominant compute path.",
+    "citations": [
+     "arXiv:2510.17111 (Efficient VLA Models survey)",
+     "roboticscenter.ai (SmolVLA Hz figure, non-arXiv, lower confidence)"
+    ],
+    "severity": "medium \u2014 the bottleneck is real (backbone cost dominates, 3-10Hz on 3-55B models) but the brief's crowded-areas list explicitly rejects the standard fixes (quantization, early-exit, KV-cache reuse, speculative decoding), so this axis has little room left for a genuinely novel angle without re-treading crowded ground"
+   },
+   {
+    "name": "Few-shot / low-data adaptation \u2014 largely uncharacterized under a fixed protocol",
+    "evidence": "No paper found reporting a clean, controlled 10-shot or 25-shot LIBERO number for a single sub-500M checkpoint. Adjacent data points: RIPT-VLA (5-shot, 5 demos/task) improves QueST by +21.2 on LIBERO-Long and +12.4 on ML45 over the SFT-only baseline via interactive post-training (RL-style), implying the SFT few-shot floor is far below full-data performance. pi_RL: few-shot pi0 SFT baseline only 57.6% avg (RL fine-tuning lifts it to 96.1-97.6%); few-shot pi0.5 SFT is 77.1% avg but craters to 43.9% specifically on Long tasks (RL recovers to 94.0%) \u2014 i.e., the few-shot deficit compounds with the long-horizon deficit.",
+    "citations": [
+     "arXiv:2505.17016 (Interactive Post-Training / RIPT-VLA)",
+     "arXiv:2510.25889 (pi_RL)"
+    ],
+    "severity": "medium \u2014 real and confirmed-uncharacterized gap (matches the brief's framing exactly), but existing evidence only comes bundled with RL post-training papers, not a controlled data-efficiency study \u2014 any sweep here needs its own clean baseline first, not a repurposed number from an RL paper"
+   },
+   {
+    "name": "Sim-to-real / real-world generalization to novel objects",
+    "evidence": "Real-robot ALOHA-Mobile household-task study: pi0 drops from in-distribution 83%\u219273% (Put Sponge in Pot, unseen instances, -10pt) and 87%\u219281% (Clean Dish, unseen objects, -6pt) \u2014 smaller drop than sim-only perturbation studies but still consistent direction. Failure taxonomy across models: pre-grasp/grasp errors dominate at 32% of failures, release/placement timing 18%, trajectory drift under occlusion 15% \u2014 'most failures stem from low-level geometric or temporal inaccuracies rather than high-level semantic misinterpretation,' i.e. the bottleneck is control precision, not language/scene understanding.",
+    "citations": [
+     "arXiv:2511.11298 (Experiences from Benchmarking VLA Models for Robotic Manipulation)"
+    ],
+    "severity": "low-medium for this project (sim-only per the brief) but worth a sentence for reviewer framing \u2014 the failure-mode taxonomy (geometric/temporal >> semantic) is a useful sanity check against over-claiming that a language/semantic fix would close the real-world gap"
+   }
+  ]
+ },
+ "candidates": [
+  {
+   "id": "C1",
+   "name": "RND Novelty Gate for Adaptive Test-Time Compute",
+   "source_domain": "intrinsic motivation / prediction-error exploration bonuses",
+   "mechanism": "Attach a Random Network Distillation pair (frozen random target MLP + trained predictor MLP) on frozen SmolVLA backbone embeddings, trained purely self-supervised on in-distribution LIBERO training states (no reward, no labels). At test time the predictor's error against the random target is a per-step OOD/novelty score; when it exceeds a calibrated threshold (LIBERO-Plus-style perturbation), the policy adaptively spends extra test-time compute (invokes an MPPI/BoN fallback) only on flagged steps, staying cheap everywhere else.",
+   "source_papers": [
+    "arXiv:1810.12894 (Burda, Edwards, Storkey, Klimov, Exploration by Random Network Distillation)",
+    "arXiv:2602.12375 (Value Bonuses using Ensemble Errors)"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus perturbations, and compute efficiency (adaptive test-time compute allocation)",
+   "mechanistic_story": "RND's error signal is a purely self-supervised measure of 'have I seen states like this during training.' Since LIBERO-Plus perturbations by construction push the policy off its training distribution, RND error should spike specifically on the perturbation factors (viewpoint, init-state) flagged as worst \u2014 a cheap, label-free trigger for spending extra compute only where needed. RND predicts a frozen random function of the CURRENT state (not future dynamics), so it stays outside the world-model exclusion.",
+   "dimensions_improved": [
+    "robustness",
+    "compute efficiency",
+    "latency"
+   ],
+   "nearest_vla_prior_art": "MG-Select's masking-based self-confidence metric is the closest mechanism found but is a dropout-based epistemic-uncertainty proxy used for best-of-N SELECTION, not a trained novelty predictor against a frozen random target used for compute-budget GATING. No RND/prediction-error novelty-detection work found on a frozen VLA backbone.",
+   "integration_path": "Two small MLPs (~1-2M params each, one frozen-random, one trained) on frozen SmolVLA backbone features; trained once self-supervised on LIBERO (a few GPU-hours). At inference one extra tiny forward pass per step computes novelty and gates whether to invoke the optional MPPI/BoN fallback.",
+   "novelty_confidence": 0.8,
+   "pre_flag": "OOD-monitor/escalation cluster (C1/C3/C2/C24/C15): competing detectors for the same gate-a-fallback slot \u2014 audit picks the winner."
+  },
+  {
+   "id": "C2",
+   "name": "Neural Contraction Certificate for Action-Chunk Verification",
+   "source_domain": "contraction theory / certified nonlinear control",
+   "mechanism": "Train a small auxiliary head (MLP over pooled VLM features + proprioceptive state, a few M params) that outputs a learned contraction metric M(s) via a Lipschitz/NSD-regularized loss on pairs of nearby executed trajectories, so trajectory pairs under the frozen policy provably converge when M's contraction condition holds. Used two ways with zero backbone gradients: (a) training-free reranker over K sampled flow-matching chunks (keep best contraction margin, no learned reward model); (b) a continuous robustness score flagged low when nearby perturbed states are predicted to diverge.",
+   "source_papers": [
+    "Lohmiller & Slotine, Automatica 1998 (contraction analysis, foundational)",
+    "Singh, Majumdar, Slotine, Pavone, ICRA 2017 (CCM robust motion planning)",
+    "arXiv 2309.07443 (Sharma, Zhao, Hovakimyan, Learning Tube-Certified Control Using Robust Contraction Metrics)",
+    "Dawson, Gao, Fan, IEEE T-RO 2022 (survey of neural certificate methods)"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus (viewpoint/init-state) and the lack of any formal (non-empirical) signal for when a chunk is about to fail",
+   "mechanistic_story": "Cosine-similarity/uncentered-variance collapse metrics were ruled out by this project's own integrity rules; a contraction metric is a formally-grounded, fundamentally different quantity \u2014 it measures whether the local closed-loop Jacobian of (state, chunk) pairs is contracting, not representation variance. Trained on trajectory-pair geometry rather than task reward, it needs no extra labels, and its score is a certified (not merely correlated) stability margin, directly explaining LIBERO-Plus's viewpoint/init-state failure as loss of local contraction.",
+   "dimensions_improved": [
+    "robustness",
+    "success rate",
+    "parameter efficiency",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "arXiv 2603.13782 ('Your VLA Model Already Has Attention Heads For Path Deviation Detection') is the closest \u2014 a training-free deviation detector using attention heads for navigation VLAs, but an empirical probe with no stability guarantee, not a certified contraction metric for manipulation chunks. Other hits were non-VLA (ContractionPPO, hydraulic force control, certificate surveys).",
+   "integration_path": "Auxiliary head (~1-5M params) trained parallel to SmolVLA's flow-matching expert on existing frozen-backbone features; loss added only to this head. A few hours on 1xA100 using already-collected LIBERO demo rollouts (pairs of nearby trajectories from different seeds/inits). Eval: rerank-by-contraction-margin vs no-rerank on LIBERO-Long and LIBERO-Plus.",
+   "novelty_confidence": 0.8,
+   "pre_flag": "OOD-monitor/escalation cluster (C1/C2/C3/C24/C15)."
+  },
+  {
+   "id": "C3",
+   "name": "Quasimetric Progress Monitor for Perturbation Detection",
+   "source_domain": "quasimetric RL (asymmetric goal-distance value functions)",
+   "mechanism": "Train a quasimetric embedding d(s,g) \u2014 asymmetric, triangle-inequality-respecting \u2014 between per-frame frozen-backbone embeddings and the language-instruction embedding, using the QRL objective on successful LIBERO trajectories. At test time monitor d(s_t, g) online: a non-decreasing or spiking distance flags stuck/perturbed execution (LIBERO-Plus viewpoint/init-state shift), triggering a cheap fallback (extra resampling, or hold the last stable chunk instead of extrapolating).",
+   "source_papers": [
+    "arXiv:2304.01203 (Wang, Torralba, Isola, Zhang, Optimal Goal-Reaching RL via Quasimetric Learning)",
+    "arXiv:2208.08133 (Metric Residual Networks for Sample-Efficient GCRL)",
+    "arXiv:2409.08724 (Quasimetric Value Functions with Dense Rewards)"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus perturbations (worst factors: camera viewpoint, robot init-state)",
+   "mechanistic_story": "Standard scalar value/critic heads collapse goal-distance and progress into one undifferentiated number. A quasimetric explicitly enforces the triangle-inequality structure provably correct for goal-reaching value functions, giving a principled stuck/regression detector \u2014 unlike raw cosine-similarity drift, which this project's own integrity rules flag as unreliable on uncentered activations. It is a distance function, not a dynamics predictor, so outside the world-model exclusion.",
+   "dimensions_improved": [
+    "robustness",
+    "generalization",
+    "compute efficiency"
+   ],
+   "nearest_vla_prior_art": "Projective Quasimetric Planning / ProQ (arXiv:2506.18847) applies quasimetric sub-goal planning to navigation only, no language conditioning, no manipulation, no frozen-VLA monitoring use. No VLA-paired quasimetric work found.",
+   "integration_path": "Small metric-embedding MLP (~1-3M params) on frozen SmolVLA visual+language token features, trained offline via QRL loss on existing LIBERO demo trajectories (under a GPU-day, one-time). Runs as an inference-time monitoring side-channel \u2014 one extra tiny forward pass per control step, near-zero added latency.",
+   "novelty_confidence": 0.75,
+   "pre_flag": "OOD-monitor/escalation cluster (C1/C2/C3/C24/C15)."
+  },
+  {
+   "id": "C4",
+   "name": "Uncontrolled-Manifold Loss Reweighting",
+   "source_domain": "optimal feedback control theory / minimal-intervention principle",
+   "mechanism": "Estimate a low-rank, per-timestep task-relevant subspace of each action chunk from demonstrations (a small learned linear projector trained to predict task-completion/goal-state from partial perturbations of the chunk), then reweight SmolVLA's flow-matching regression loss to penalize deviation heavily along the task-relevant subspace and lightly (or not at all) in orthogonal 'uncontrolled' directions, replacing the uniform per-dimension L2 loss.",
+   "source_papers": [
+    "Todorov & Jordan, 'Optimal feedback control as a theory of motor coordination', Nature Neuroscience 2002",
+    "Scholz & Sch\u00f6ner, 'The uncontrolled manifold concept', Experimental Brain Research 1999"
+   ],
+   "vla_bottleneck": "robustness/generalization collapse under LIBERO-Plus init-state perturbation, plus long-horizon capacity wasted matching irrelevant per-step trajectory shape",
+   "mechanistic_story": "The minimal-intervention principle and uncontrolled-manifold concept explain why biological reaching is precise in task-relevant coordinates but variable elsewhere: correcting only what affects the goal makes control both robust (redundant DOFs absorb disturbance for free) and generalizable (never overfitting free directions). SmolVLA's uniform flow-matching loss spends equal capacity nailing every action dimension, including nuisance directions that vary freely across LIBERO-Plus init-state perturbations.",
+   "dimensions_improved": [
+    "robustness",
+    "generalization",
+    "data efficiency"
+   ],
+   "nearest_vla_prior_art": "None found applied to a learned VLA or imitation-learning loss. Search hits were the source neuroscience/control literature and a classical robot-arm feedback controller (PMC4940408) with no learned policy and no VLA.",
+   "integration_path": "Add a <1M param low-rank relevance projector trained jointly with (but architecturally separate from) the flow-matching expert; it only reweights the training loss matrix, adding zero inference-time latency or parameters once trained. Cheap diagnostic first: check whether the learned relevance subspace concentrates variance on task-relevant action dims on a handful of LIBERO tasks before training a full policy.",
+   "novelty_confidence": 0.75,
+   "pre_flag": "Shares the task-relevant-subspace primitive with C29 (MinIntervene); different lever (training loss vs inference replan gate), kept separate per audit guidance."
+  },
+  {
+   "id": "C5",
+   "name": "Learned Variable-Impedance Action Channel",
+   "source_domain": "impedance control / variable stiffness manipulation",
+   "mechanism": "A small auxiliary head (few hundred K to ~2M params) on frozen backbone pooled features predicts, alongside the existing pose/gripper action, a per-timestep diagonal Cartesian stiffness/damping schedule. The predicted pose target is tracked by a low-level impedance/operational-space controller rather than executed as a hard setpoint. Trained with heuristic supervision (low stiffness around contact/gripper-close events inferred from demo labels, high stiffness during free-space transport) \u2014 no reward model, no backbone gradient.",
+   "source_papers": [
+    "Hogan, ASME JDSMC 1985, 'Impedance Control: An Approach to Manipulation' (foundational)",
+    "Abu-Dakka & Saveriano, Frontiers in Robotics and AI 2020, 'Variable Impedance Control and Learning \u2014 A Review'"
+   ],
+   "vla_bottleneck": "robustness under perturbation/contact-rich distribution shift and contact-heavy task success (MetaWorld-hard tier)",
+   "mechanistic_story": "A frozen backbone's action output is a kinematic target; under perturbation (distractor, small viewpoint-induced position error), rigid position-controlled execution produces excessive contact force or failure even if the predicted pose was only slightly off. Predicting compliance parameters alongside the pose lets the same nominal trajectory tolerate exactly the kind of small geometric error LIBERO-Plus's worst factors inject, without requiring a more accurate pose \u2014 orthogonal to action-representation accuracy.",
+   "dimensions_improved": [
+    "robustness",
+    "success rate",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "None found. Searches ('vision language action robot impedance control compliance', 'variable impedance action head learned stiffness') surfaced only pi0.5/pi0/ChatVLA/OpenVLA/CoT-VLA, none predicting stiffness/impedance.",
+   "integration_path": "Small MLP head parallel to the flow-matching expert, trained on existing demo data with heuristic stiffness labels; a few hours on 1xA100. Integration risk (flagged honestly): LIBERO/robosuite's default controller is position-based \u2014 needs the simulator's operational-space/impedance controller mode enabled; check availability/stability before committing budget.",
+   "novelty_confidence": 0.75,
+   "pre_flag": ""
+  },
+  {
+   "id": "C6",
+   "name": "ECAT \u2014 Error-Correcting Action Tokens",
+   "source_domain": "channel coding / error-correcting codes",
+   "mechanism": "Wrap the predicted action chunk in a systematic error-correcting code: the head emits n original values plus r redundant parity coefficients (fixed linear code or a small jointly-trained TurboAE-style encoder/decoder), and a lightweight decoder performs syndrome-style correction on the chunk before dispatch. Backbone untouched; only the head's output layer and the small decoder are trained.",
+   "source_papers": [
+    "Jiang, Kim, Kannan, Oh, Viswanath \u2014 Turbo Autoencoder, NeurIPS 2019 (arXiv 1911.03038)",
+    "Kim et al. \u2014 Communication Algorithms via Deep Learning, ICLR 2018 (arXiv 1805.09317)",
+    "Hamming \u2014 Error Detecting and Error Correcting Codes, BSTJ 1950"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus (viewpoint/lighting/distractor-induced errors concentrated in a subset of chunk timesteps)",
+   "mechanistic_story": "Under visual perturbation the action head rarely fails uniformly across a 50-step chunk \u2014 a sparse subset of timesteps get knocked off while the rest stay locally correct, exactly the sparse-error regime channel codes are built for. A systematic code with jointly-trained redundancy lets a cheap decoder recover corrupted timesteps from surviving parity the way a channel decoder recovers bit-flips, without touching perception or the frozen backbone.",
+   "dimensions_improved": [
+    "robustness",
+    "success rate",
+    "latency",
+    "parameter efficiency"
+   ],
+   "nearest_vla_prior_art": "SC-MLLM (arXiv 2405.17418) and RoboFAC do behavioral/semantic self-correction (detect a failure, ask for help/replan) \u2014 not information-theoretic redundancy coding. 'The Compression Gap' (arXiv 2604.03191) diagnoses an information bottleneck in action tokenizers but proposes no redundancy fix. No channel-coding parity mechanism for VLA action chunks found.",
+   "integration_path": "Modify the flow-matching/L1 output layer to predict n+r values per chunk (systematic-code redundancy). Add a ~1-5M param decoder between head output and the action buffer performing soft correction before dispatch. Both train jointly with the existing action loss within SmolVLA's normal finetune budget (~hours); backbone frozen.",
+   "novelty_confidence": 0.75,
+   "pre_flag": ""
+  },
+  {
+   "id": "C7",
+   "name": "Evidential Camera-Trust Gate",
+   "source_domain": "multi-view evidential deep learning / Dempster-Shafer sensor fusion",
+   "mechanism": "Add a small per-camera evidential head (2-layer MLP + softplus \u2192 Dirichlet evidence vector) on each camera's frozen vision-encoder+connector output (agentview + wrist). Combine per-view evidence via the closed-form Dempster-Shafer/Dirichlet rule before the fused representation reaches the action expert, replacing naive token concatenation. Trained with synthetic single-camera corruption (viewpoint jitter, brightness, occlusion patches one camera at a time) plus the TMC evidential loss, so a corrupted stream is automatically down-weighted at test time.",
+   "source_papers": [
+    "Han, Zhang, Fu, Zhou, 'Trusted Multi-View Classification with Dynamic Evidential Fusion,' arXiv:2204.11423"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus, specifically camera-viewpoint, the single worst-performing factor (~56% for OFT-class models)",
+   "mechanistic_story": "A frozen backbone's fixed pooling/concatenation over camera streams cannot detect that one stream (agentview after a viewpoint shift) is corrupted while the other (wrist-cam) is intact; it blends the bad signal in uniformly. An evidential per-view confidence gate, trained to output low evidence under synthetic single-view corruption, discounts the corrupted stream and leans on the intact one \u2014 directly targeting the largest measured LIBERO-Plus failure mode.",
+   "dimensions_improved": [
+    "robustness",
+    "success rate",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "'Viewpoint-Agnostic Manipulation Policies with Strategic Vantage Selection' (arXiv 2506.12261, WebFetch-verified) is STATIC train-time camera-placement selection, not dynamic per-inference trust-weighting of available views. 'LIBERO-Occ' (arXiv 2606.10862) does generative viewpoint imagination, not evidential fusion of existing views.",
+   "integration_path": "Insert between SmolVLM2's per-camera output and the point where camera tokens merge before the flow-matching expert. Per camera: one small MLP (~hundreds of K params); 2 cameras in LIBERO. Combination is closed-form (no extra learned params). Trains jointly using cached-feature infra plus live forward passes only for the small head; hours on 1 A100.",
+   "novelty_confidence": 0.72,
+   "pre_flag": ""
+  },
+  {
+   "id": "C8",
+   "name": "DMP-Chunk: Continuous-Phase Attractor Action Head",
+   "source_domain": "biology / classical robotics motor control \u2014 dynamic movement primitives, central pattern generators",
+   "mechanism": "Replace the flow-matching action expert with a per-chunk Dynamic Movement Primitive parameterization: a lightweight head reads the frozen VLM's pooled feature and outputs per-DOF attractor goal, amplitude, and forcing-term basis weights; the timestep sequence is generated by integrating the DMP's canonical spring-damper attractor system. A persistent phase/canonical-system state is carried across chunk boundaries, so chunk N+1 begins exactly where chunk N ended with matched first/second derivatives, and \u2014 because the forcing function is phase-normalized and provably converges to the predicted goal from any actual starting state \u2014 execution self-corrects under initial-state perturbation.",
+   "source_papers": [
+    "Ijspeert, 'Central pattern generators for locomotion control in animals and robots', Neural Networks 2008",
+    "Ijspeert, Nakanishi, Hoffmann, Pastor, Schaal, 'Dynamical Movement Primitives: Learning Attractor Models for Motor Behaviors', Neural Computation 25(2):328-373, 2013"
+   ],
+   "vla_bottleneck": "long-horizon collapse and chunk-boundary jerk (SmolVLA Long 49-71% vs 94%+ OFT) AND robot-initial-state perturbation robustness (~32% for OFT-class, one of LIBERO-Plus's two worst factors)",
+   "mechanistic_story": "SmolVLA resamples a fresh flow-matching chunk from noise every ~50 steps with nothing forcing the new chunk's start state/velocity to match the previous one, so long rollouts accumulate discontinuities that compound into drift. A DMP's canonical system is a first-order ODE with a persistent phase variable, so chunk N+1 is initialized from chunk N's terminal state by construction (smoothness/goal-convergence for free). Separately, under init-state perturbation a raw-chunk mapping executes ballistically wrong; a DMP's attractor re-enters the same trained approach shape from any actual initial state, self-correcting during execution rather than compounding error, with no runtime replanning.",
+   "dimensions_improved": [
+    "success rate",
+    "robustness",
+    "latency",
+    "parameter efficiency"
+   ],
+   "nearest_vla_prior_art": "KeyMPs (arXiv 2504.10011, one-shot VLM-guided keypoint sequencing of DMPs) and Language Movement Primitives (arXiv 2602.02839, language-grounding of motion) connect VLMs to DMPs but not as a trained regression head replacing the flow-matching/L1/token head inside a frozen-backbone <500M VLA evaluated on LIBERO/Meta-World for perturbation robustness. DAM-VLA (arXiv 2603.00926) is a mixture-of-heads routing mechanism, not an attractor dynamical system. Distinct from killed #3 (RTC AR-prefix continuation): DMP is a continuous dynamical system, not a discrete-decoding trick.",
+   "integration_path": "A 6th arm of the project's action-representation atlas (heads/head_dmp.py, same conditioning interface as head_l1_chunk.py/head_bspline.py). Per DOF: predict ~15-25 basis weights + goal scalar via a small MLP (~50-150K params for 7 DOF). Loss = closed-form locally-weighted-regression fit of DMP weights to demo trajectories plus the standard rollout L1 loss. Canonical/transformation system integrated as a cheap closed-form ODE at inference (no denoising loop). Trains in hours on 1xA100; backbone frozen. Merged from two independent scanner proposals.",
+   "novelty_confidence": 0.72,
+   "pre_flag": "Adjacent to the crowded compact-action-head/tokenizer atlas (BEAST/B-spline). Consolidated from two duplicate raw ideas (long-horizon-smoothness framing + init-state-self-correction framing)."
+  },
+  {
+   "id": "C9",
+   "name": "DreamCoder-style Action-Chunk Library Learning",
+   "source_domain": "program synthesis / library learning (wake-sleep Bayesian program induction)",
+   "mechanism": "Offline-mine SmolVLA's own successful action-chunk rollouts across LIBERO-Long for recurring multi-chunk motifs via DreamCoder's wake-sleep loop: a wake phase searches chunk-sequence decompositions explaining rollouts, a sleep/abstraction phase (E-graph refactoring) compresses recurring sub-sequences into a growing library of K primitives, and a sleep/dreaming phase trains a small recognition/router network on replayed+fantasized examples to predict which primitive applies. Each primitive is a learned conditioning vector injected into the frozen flow-matching expert. At inference a lightweight router retrieves/composes primitives instead of re-synthesizing each subgoal's motion.",
+   "source_papers": [
+    "arXiv:2006.08381 (DreamCoder, Ellis et al., Phil. Trans. R. Soc. A 2020)",
+    "DreamCoder (Ellis et al., PLDI 2021)"
+   ],
+   "vla_bottleneck": "long-horizon (SmolVLA 49-71% vs 94%+ on LIBERO-Long) and few-shot data efficiency (uncharacterized at 10-25 demos)",
+   "mechanistic_story": "Long-horizon failure is largely a compounding-decoding problem: the expert must synthesize every multi-step motion afresh, so errors compound over the ~8-13 chunks LIBERO-Long needs. Library learning converts recurring motion motifs into reusable, already-verified subroutines, shrinking the novel content the sampler must generate per call and letting a new long-horizon task borrow primitives validated on earlier tasks \u2014 attacking both the compounding-error mechanism and the few-shot regime.",
+   "dimensions_improved": [
+    "success rate",
+    "generalization",
+    "data efficiency",
+    "parameter efficiency"
+   ],
+   "nearest_vla_prior_art": "PrimitiveVLA (2605.28634), Uni-Skill (2603.02623), SDP use hand-specified/VLM-labeled discrete high-level skills, not bottom-up compression-driven discovery of continuous action-chunk motifs via wake-sleep/E-graph refactoring. DREAM-Chunk (2606.18589) uses a world model to select among sampled chunks (different mechanism). No DreamCoder-style program-library abstraction on VLA action chunks found.",
+   "integration_path": "Offline mining pass over cached rollout logs (CPU-cheap). Library = learned embedding table (K~20-50 \u00d7 d_cond) + router MLP (~2-5M params) on frozen SmolVLM2 features. Router and library trained end-to-end with frozen backbone and frozen (or LoRA) flow-matching expert on LIBERO-Long, <1 day on 1xA100 reusing feature-caching.",
+   "novelty_confidence": 0.75,
+   "pre_flag": "'dreaming' = program-fantasy replay for the recognition net, NO environment dynamics model \u2014 outside the world-model exclusion despite the name."
+  },
+  {
+   "id": "C10",
+   "name": "Successor-Feature Zero-Shot Goal Transfer Head",
+   "source_domain": "successor features / generalized policy improvement (transfer RL)",
+   "mechanism": "Train a lightweight successor-feature head phi(s,a) on frozen backbone features to predict discounted future occupancy of a small set of interpretable predicate features (object-in-gripper, object-at-target, computed from sim state during offline training). Decouple this from a per-instruction reward-weight vector w(instruction) read off the frozen language embedding via a linear probe. At test time, on a novel instruction/goal composition, w is computed zero-shot and combined with phi via generalized policy improvement to bias/rerank the flow-matching sampler's candidate chunks \u2014 no retraining for new goal combinations.",
+   "source_papers": [
+    "arXiv:1606.05312 (Barreto et al., Successor Features for Transfer in RL)",
+    "arXiv:2001.04025 (Universal Successor Features)",
+    "arXiv:2110.15701 (Successor Feature Representations)"
+   ],
+   "vla_bottleneck": "generalization to unseen instruction/object compositions (LIBERO-Plus) and robustness (novel effective goals under perturbation)",
+   "mechanistic_story": "SF+GPI's proven property is instant policy transfer to a new reward/goal via a dot product, with no additional RL \u2014 combinatorial instruction generalization 'for free' from one fixed dynamics representation, unlike a monolithic Q-critic that must be retrained whenever the task/goal distribution shifts. SFs are model-free TD expectations (nothing roll-out-able), outside the world-model exclusion.",
+   "dimensions_improved": [
+    "generalization",
+    "data efficiency",
+    "robustness"
+   ],
+   "nearest_vla_prior_art": "Guided Action Flow (arXiv:2607.02092) and VGAS (arXiv:2602.07399) train a monolithic scalar critic on frozen VLA features; neither decomposes into a reward-agnostic successor representation plus a goal-weight vector, so neither supports SF-specific zero-shot GPI transfer to a genuinely new instruction without retraining.",
+   "integration_path": "Small MLP (~5-10M params) reading frozen final-layer features, trained via TD on predicate features logged during one offline pass over existing demos; w(instruction) is a linear readout off frozen language token embeddings. Used as an additive reranking bias on chunk candidates at inference. Trainable in under a GPU-day on 1xA100.",
+   "novelty_confidence": 0.7,
+   "pre_flag": ""
+  },
+  {
+   "id": "C11",
+   "name": "MPPI Receding-Horizon Soft-Blending of Action Chunks",
+   "source_domain": "MPPI / information-theoretic sampling-based MPC",
+   "mechanism": "Replace single-sample (or best-of-N argmax) execution with the MPPI update: draw K samples per re-planning step (free from the model's native stochastic flow-matching sampler), score each with a cheap smoothness/consistency cost (deviation from the previous chunk's still-valid tail, jerk penalty), weight by softmax exp(-cost/lambda), and execute the weighted AVERAGE trajectory rather than a single winner.",
+   "source_papers": [
+    "arXiv:1707.02342 (Williams et al., Information Theoretic MPC)",
+    "arXiv:2109.12147 (Trajectory Distribution Control for MPPI via Covariance Steering)"
+   ],
+   "vla_bottleneck": "robustness / trajectory jerk-smoothness and contact-rich task failures from noisy single-sample chunks",
+   "mechanistic_story": "A single sampled flow-matching trajectory can be a low-probability tail draw. MPPI's defining trick \u2014 soft-weighted averaging across parallel samples via an information-theoretic cost rather than picking one winner \u2014 is mechanistically distinct from every VLA test-time method found (argmax/best-of-N selection or gradient guidance through the ODE using a trained critic); none perform path-integral-style soft trajectory blending.",
+   "dimensions_improved": [
+    "robustness",
+    "success rate",
+    "latency"
+   ],
+   "nearest_vla_prior_art": "Guided Action Flow (arXiv:2607.02092) steers the flow ODE via gradients from a trained critic; VGAS (arXiv:2602.07399) does best-of-N argmax via a trained Q-Chunk-Former critic. Both require a trained value function and select/steer a single sample; MPPI needs no trained critic (hand-designed smoothness cost) and produces a blended mean.",
+   "integration_path": "Wraps the existing flow-matching sampler at inference; K=4-8 parallel samples per step, softmax-weighted average in raw action space. Zero new trainable params for the baseline hand-designed-cost variant, or a ~1M param learned cost head for the improved variant. No retraining for the baseline.",
+   "novelty_confidence": 0.7,
+   "pre_flag": "K-sample aggregation cluster (C11/C22/C23): adjacent to crowded best-of-N/test-time-scaling; per-idea differentiator is the estimator (soft path-integral blend vs robust statistics vs gossip)."
+  },
+  {
+   "id": "C12",
+   "name": "Reliability-Weighted Habit/Goal-Directed Blending",
+   "source_domain": "cognitive science \u2014 habit formation vs goal-directed control",
+   "mechanism": "Run two parallel branches off frozen backbone features: a cheap 'habit' branch (low-rank flow head conditioned only on proprioception + previous action chunk, producing long smooth reactive chunks) and the standard 'goal-directed' branch (full vision+language flow-matching expert). A small arbitration head maintains a running reliability estimate of each branch (prediction consistency/error) and blends their predicted velocity fields per step, shifting toward the habit branch when reliable (cheap, robust to visual perturbation) and toward the goal-directed branch when novelty/disagreement is high.",
+   "source_papers": [
+    "Daw, Niv & Dayan 2005, Nature Neuroscience 8, 1704-1711",
+    "Viejo et al., bioRxiv 2020.11.24.396630"
+   ],
+   "vla_bottleneck": "robustness collapse (LIBERO-Plus viewpoint/init-state) and long-horizon stage-transition failures",
+   "mechanistic_story": "Daw et al.'s arbitration model shows animals weight a cheap cached (habitual) controller vs an expensive deliberative one by estimated reliability, not a fixed schedule. Under LIBERO-Plus perturbations the vision-conditioned branch's reliability should measurably drop while a proprioception-only habit branch stays stable for well-practiced sub-motions (transport, reach) \u2014 arbitrating by measured reliability, not a hand-tuned mix, should recover success specifically on the perturbation axes that collapse hardest.",
+   "dimensions_improved": [
+    "robustness",
+    "success rate",
+    "latency"
+   ],
+   "nearest_vla_prior_art": "No VLA paper found combining reliability-based habit/goal-directed arbitration. Found only VLA uncertainty-for-failure-detection (2606.20754; token-level uncertainty, OpenReview NX0euXAv98) and the neuroscience arbitration literature, never joined.",
+   "integration_path": "Low-rank habit head (~10-20M params) parallel to the flow-matching expert, plus a ~1-3M param arbitration/reliability head reading recent per-step prediction-error statistics, outputting a mixing weight applied at the velocity-field level (convex combination of two velocity predictions is well-defined in flow matching). Habit head trains on demo chunks with vision dropped; arbitration head via short supervised/bandit objective. Backbone frozen.",
+   "novelty_confidence": 0.7,
+   "pre_flag": "Distinct from crowded 'dual-system fast/slow VLA' (which arbitrates by compute/latency budget, not measured reliability) and from killed #3 RTC (which smooths chunk boundaries within one decoder)."
+  },
+  {
+   "id": "C13",
+   "name": "RD-IB \u2014 Rate-Distortion / Multi-View Information Bottleneck Adapter",
+   "source_domain": "information bottleneck / mutual-information regularization",
+   "mechanism": "Insert a small variational information-bottleneck layer between the frozen SmolVLM2 features and the flow-matching expert, trained with a multi-view IB objective (LIBERO's multiple camera streams, or clean/augmented view pairs, as 'views') that keeps only cross-view-shared information and discards view-specific nuisance via an explicit MI Lagrangian (rate-distortion sweep over beta).",
+   "source_papers": [
+    "Alemi, Fischer, Dillon, Murphy \u2014 Deep Variational Information Bottleneck, ICLR 2017 (arXiv 1612.00410)",
+    "Federici et al. \u2014 Multi-View Information Bottleneck, ICLR 2020 (arXiv 2002.07017)",
+    "Fan & Li \u2014 DRIBO, ICML 2022"
+   ],
+   "vla_bottleneck": "robustness collapse \u2014 camera-viewpoint (worst LIBERO-Plus factor, ~56%), plus lighting/distractor",
+   "mechanistic_story": "LIBERO-Plus analysis shows viewpoint/init-state shift, not missing task understanding, drives failure, and this project's own linear probe shows frozen features carry sufficient action-predictive information (R^2=0.75) \u2014 so the problem is nuisance (view-specific) information entangled with task-relevant information. A trainable IB adapter squeezes out nuisance channels via a formal rate-distortion tradeoff without altering the frozen backbone.",
+   "dimensions_improved": [
+    "robustness",
+    "latency",
+    "compute efficiency",
+    "data efficiency"
+   ],
+   "nearest_vla_prior_art": "DRIBO applies multi-view IB to image-based RL, not VLA, not frozen-backbone imitation, never LIBERO-Plus. No VLA paper found using IB/MIB as a trainable adapter for viewpoint robustness. Distinct from killed #2 (freeze the whole encoder) and killed #7 (VICReg anti-collapse for unfrozen backbone): RD-IB keeps the backbone frozen and adds a compressive layer to discard conceded-present nuisance info.",
+   "integration_path": "Small variational bottleneck (mu/sigma heads + reparameterized sample, dim ~64-128) into SmolVLA's connector. Train with existing action loss + beta*I(Z;X_view) using camera views or photometric augmentation as paired-view signal, sweeping beta. ~2-10M new params, fits SmolVLA's ~20h/1xA100 finetune budget.",
+   "novelty_confidence": 0.7,
+   "pre_flag": ""
+  },
+  {
+   "id": "C14",
+   "name": "CBF-QP Chunk-Consistency Safety Filter",
+   "source_domain": "control barrier functions (safety-critical control)",
+   "mechanism": "Insert a deterministic QP-based filter between the flow-matching head's raw output chunk and the environment: given the raw candidate action and a small set of barrier functions (joint/workspace limits, chunk-to-chunk smoothness bound, gripper pre-shape consistency), solve a per-step QP finding the minimal perturbation satisfying the CBF forward-invariance condition. Tiny QP (a handful of constraints, low-dim action), sub-ms solve; barriers hand-specified or a small learned auxiliary net.",
+   "source_papers": [
+    "Ames et al., ECC 2019, 'Control Barrier Functions: Theory and Applications'",
+    "arXiv 2204.00208 (Breeden & Panagou, Predictive CBFs for Online Safety-Critical Control)",
+    "arXiv 1909.08045 (Han & Tedrake, ICRA 2019, Local Trajectory Stabilization for Dexterous Manipulation)"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus perturbation and chunk-boundary jerk/discontinuity",
+   "mechanistic_story": "When a shifted viewpoint/init-state pushes the backbone off-distribution, the resulting chunk can violate basic physical consistency (large boundary discontinuity, joint-limit excursions, premature gripper closure) even when high-level intent is roughly right. A CBF-QP filter catches these with a formal forward-invariance guarantee and minimal-intervention correction \u2014 a hard bound, not statistical smoothing \u2014 at negligible latency since the QP is on the low-dim action space.",
+   "dimensions_improved": [
+    "robustness",
+    "success rate",
+    "latency"
+   ],
+   "nearest_vla_prior_art": "None found on VLA + CBF safety filtering (all hits were general CBF control-theory). Distinct from crowded test-time-scaling/verifiers (RoboMonkey, MG-Select, RoVer): those are stochastic best-of-N rerankers using a learned reward; this is a deterministic constraint-projection filter with a formal invariance guarantee applied to every chunk.",
+   "integration_path": "Small QP solve (cvxpy/qpOASES) inserted in the lerobot eval loop between action-head output and env.step. Barriers start hand-specified (joint limits, max chunk-boundary delta), with an optional ~1M param learned barrier head as follow-up. Fully inference-time; testable on LIBERO-Plus within a day or two.",
+   "novelty_confidence": 0.7,
+   "pre_flag": ""
+  },
+  {
+   "id": "C15",
+   "name": "Self/Nonself Gate: Negative-Selection Anomaly Detector for Perturbation-Triggered Escalation",
+   "source_domain": "biology \u2014 immune-inspired anomaly detection",
+   "mechanism": "Run Forrest et al.'s negative-selection algorithm on frozen VLM pooled features from successful training rollouts ('self'): generate random detector regions in feature space, censor any overlapping self, keep survivors as an unsupervised anomaly detector (zero labeled failures needed). At inference, if the current observation triggers a surviving detector, the policy escalates (extra denoising steps, a slower controller, or a verifier call) instead of executing the fast default path.",
+   "source_papers": [
+    "Forrest, Perelson, Allen, Cherukuri, 'Self-Nonself Discrimination in a Computer', IEEE Symp. Security & Privacy 1994"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus perturbations (viewpoint, init-state, lighting, distractors)",
+   "mechanistic_story": "LIBERO-Plus failures concentrate in observations that look subtly different from training but get processed by the same frozen features. Negative selection gives a label-free flag: detectors grown only from successful-rollout 'self' are dense where training coverage was dense and sparse where it wasn't \u2014 coverage gaps ARE unlabeled distribution shift, which the algorithm was built to catch with zero examples of the shift.",
+   "dimensions_improved": [
+    "robustness",
+    "latency",
+    "compute efficiency"
+   ],
+   "nearest_vla_prior_art": "None for VLA. Closest is pre-deep-learning robotics fault-tolerance (artificial-immune-system anomaly detection on raw sensor time series), not visual/language distribution shift in a frozen VLM's embedding space. Distinct from crowded verifiers (RoboMonkey/MG-Select/RoVer) which score candidate ACTIONS with a learned reward; this flags anomalous OBSERVATIONS unsupervised and could gate when those verifiers run.",
+   "integration_path": "Offline: negative selection once over frozen pooled features from successful rollouts \u2192 fixed detector bank in a ~32-64-dim learned projection (a few thousand params for the projection; detector bank non-parametric). Online: single nearest-detector lookup per step (ANN-indexable) gates escalate/don't. No backbone gradients; composes with a fast default head.",
+   "novelty_confidence": 0.7,
+   "pre_flag": "OOD-monitor/escalation cluster (C1/C2/C3/C24/C15)."
+  },
+  {
+   "id": "C16",
+   "name": "Algorithmically-Aligned Subgoal-Queue GNN for Length-Generalizing Long-Horizon Execution",
+   "source_domain": "neural algorithmic reasoning / GNN message passing",
+   "mechanism": "Parse each instruction into a short symbolic subgoal list (cheap in-context parse, no new modality). Train a tiny GNN (2-4 message-passing layers, <5M params) to imitate a 'pop-when-done' queue-execution algorithm over that list, using algorithmic supervision on synthetic subgoal-queue traces (generated offline, decoupled from real LIBERO). Its current-subgoal output becomes the conditioning token fed to the frozen flow-matching expert for the next chunk.",
+   "source_papers": [
+    "Veli\u010dkovi\u0107 et al., Neural Execution of Graph Algorithms (arXiv:1910.10593, ICLR 2020)",
+    "Xu et al., What Can Neural Networks Reason About? (ICLR 2020, algorithmic alignment theory)"
+   ],
+   "vla_bottleneck": "long-horizon, framed as length/order generalization (SmolVLA Long 71 vs OFT-7B 94.5; reproduces at 49% here)",
+   "mechanistic_story": "A flat Transformer/flow-matching conditioning stack has no structural bias toward executing a variable-length ordered list correctly. A GNN trained to imitate a queue-pop algorithm is structurally aligned with the actual computation, so per algorithmic-alignment theory it needs exponentially less data to generalize OOD on list length/ordering \u2014 directly targeting LIBERO-Long's longer, more-compositional instructions.",
+   "dimensions_improved": [
+    "success rate",
+    "generalization",
+    "data efficiency"
+   ],
+   "nearest_vla_prior_art": "Only generic NAR literature (Dudzik et al 'GNNs are Dynamic Programmers', arXiv:2402.13744) and pre-VLA hierarchical scene-graph task planners (arXiv:2012.07277, 2102.13177) using GNNs for symbolic planning, none with algorithmic-alignment/OOD-length framing or VLA/flow-matching integration.",
+   "integration_path": "Subgoal parser: reuse the frozen SmolVLM2 generation head in-context or a tiny cached LLM call. GNN queue-executor: <5M params, pretrained ~hours on synthetic algorithmic traces (near-zero GPU), then jointly fine-tuned with the flow-matching conditioning interface on real LIBERO-Long, well within a day.",
+   "novelty_confidence": 0.7,
+   "pre_flag": "Subtask-transition cluster (C25/C20/C16/C46/C40)."
+  },
+  {
+   "id": "C17",
+   "name": "Subtask-Indexed Iterative Learning Control (ILC) Correction Buffer",
+   "source_domain": "iterative learning control (repetitive-process control)",
+   "mechanism": "Maintain a lightweight per-subtask feedforward correction term c_k (a low-dimensional vector, not a network) updated online via the classical ILC law c_{k+1} = c_k + L\u00b7e_k, where e_k is the tracking error observed the last time this subtask phase executed (within the same episode, or across the k few-shot demo replays) and L is a fixed gain. The correction is added to the VLA's chunk output before execution; backbone and action expert unchanged.",
+   "source_papers": [
+    "Bristow, Tharayil, Alleyne, IEEE CSM 2006, 'A Survey of Iterative Learning Control'",
+    "Arimoto, Kawamura, Miyazaki, J. Robotic Systems 1984, 'Bettering Operation of Robots by Learning'",
+    "Suresh & Atkeson, 2026, 'Learning Dynamic Rope Manipulation Using Task-Level ILC'"
+   ],
+   "vla_bottleneck": "long-horizon collapse (SmolVLA Long 71% vs OFT-7B 94.5%) and few-shot data efficiency (10-25 demos)",
+   "mechanistic_story": "Long-horizon failure in LIBERO-Long is dominated by compounding error across repeated structurally-similar stages (reach-grasp-transport-place), not novel per-stage difficulty. ILC exploits exactly that repetition: instead of the frozen backbone getting every cycle right zero-shot, the policy learns a cheap, provably-converging correction from its own previous attempt at the same subtask type \u2014 squarely the low-data regime the report flags, with no additional labeled data or backbone gradient.",
+   "dimensions_improved": [
+    "success rate",
+    "data efficiency"
+   ],
+   "nearest_vla_prior_art": "Closest is killed self-generated-failure-DPO/recovery (GRAPE 2411.19309, PLD) \u2014 but those learn a preference/reward offline and touch policy weights via DPO/RL; ILC is a per-episode, weight-free, deterministic correction law with a classical convergence guarantee, not a learned reward model. Searches surfaced only classical ILC (rope/deformable manipulation), none VLA/frozen-backbone.",
+   "integration_path": "No new network. A small stateful wrapper in the lerobot eval loop: a subtask/phase index (gripper-state transitions, or k-means on pooled embeddings) keys a correction-vector buffer; update rule is 3 lines. Testable same-day; only design work is phase segmentation and gain L.",
+   "novelty_confidence": 0.7,
+   "pre_flag": "Pre-flag vs killed #5: no reward/preference model and no policy-weight update \u2014 a deterministic classical control law, not DPO/recovery-data learning."
+  },
+  {
+   "id": "C18",
+   "name": "ReservoirAct: Fixed Edge-of-Chaos Reservoir Readout for Near-Zero-Latency Action Decoding",
+   "source_domain": "physics/biology \u2014 reservoir computing & criticality",
+   "mechanism": "Insert a small, randomly-initialized, entirely untrained recurrent reservoir (echo-state network) between the frozen VLM's per-step pooled feature stream and the action output. Only a linear (or shallow MLP) readout is trained via regression; the reservoir's recurrent weights are fixed and rescaled so the spectral radius sits near 1.0 (edge of chaos), maximizing memory capacity and the separation property.",
+   "source_papers": [
+    "Jaeger, 'The echo state approach to analysing and training recurrent neural networks', GMD Report 148, 2001",
+    "Bertschinger & Natschlager, 'Real-Time Computation at the Edge of Chaos in Recurrent Neural Networks', Neural Computation 2004"
+   ],
+   "vla_bottleneck": "latency/compute (backbone dominates; iterative flow-matching denoising adds per-step cost) and robustness under LIBERO-Plus",
+   "mechanistic_story": "A flow-matching expert needs multiple denoising steps per chunk; a criticality-tuned reservoir replaces that with a single forward pass through fixed random dynamics plus one trained linear readout \u2014 the cheapest way to add temporal integration downstream of a frozen backbone. At criticality the reservoir's trajectory-separation property is maximized, pushing perturbed and unperturbed observations that look similar to the backbone further apart in reservoir state space \u2014 a plausible lever on LIBERO-Plus's collapse of similar-looking states into wrong actions.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "parameter efficiency",
+    "robustness"
+   ],
+   "nearest_vla_prior_art": "None found. 'EchoVLA' (arXiv 2511.18112) is a name-only false positive (declarative-memory VLA, unrelated to reservoir computing).",
+   "integration_path": "Reservoir: 256-1024 fixed random recurrent units seeded once, rescaled to target spectral radius (zero trainable params). Readout: linear or 2-layer MLP \u2192 action-chunk coefficients (~50-300K params). Train standalone as a fast alternate head (compare latency/Hz vs flow-matching) or as a fast default path with the flow-matching expert reserved for gated-anomalous cases. Frozen-backbone compatible.",
+   "novelty_confidence": 0.8,
+   "pre_flag": ""
+  },
+  {
+   "id": "C19",
+   "name": "Two-State Fast/Slow Motor-Adaptation Filter",
+   "source_domain": "state-space models of motor adaptation",
+   "mechanism": "A ~10-parameter, gradient-free two-rate state-space filter (fast state: high error-sensitivity/low retention; slow state: low sensitivity/high retention, per Smith et al.) applied as an additive corrective bias to the frozen flow-matching expert's output chunk. After each of the first few rollouts in a new setting (new camera pose, object, lighting), the filter updates its two states from observed action-execution error via closed-form linear rules \u2014 no optimizer, no gradients.",
+   "source_papers": [
+    "Smith, Ghazizadeh & Shadmehr, 'Interacting adaptive processes with different timescales underlie short-term motor learning', PLoS Biology 2006"
+   ],
+   "vla_bottleneck": "few-shot data efficiency at 10-25 demos, plus robustness to systematic viewpoint/init-state bias",
+   "mechanistic_story": "Smith et al. show human adaptation to a systematic sensorimotor perturbation is explained by two superposed linear processes giving rapid initial correction plus stable long-term calibration. A consistent camera-viewpoint shift or new-object-pose offset in LIBERO-Plus is structurally the same systematic bias their model corrects in a handful of trials, directly targeting the 10-25 demo few-shot regime. Learns no dynamics \u2014 a closed-form bias filter, outside the world-model exclusion.",
+   "dimensions_improved": [
+    "data efficiency",
+    "robustness",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "On-the-Fly VLA Adaptation via Test-Time RL (arXiv 2601.06748) and RobustVLA (arXiv 2511.01331) adapt VLAs online but via gradient-based RL/fine-tuning of weights \u2014 a different mechanism class from a closed-form, gradient-free two-rate bias filter that never touches a weight.",
+   "integration_path": "Stateless-between-episodes, ~10-parameter post-hoc corrector wrapping the flow-matching output in the inference loop; update rules run in microseconds. Pre-registered success criterion: k-shot (k=1,3,5) success on held-out LIBERO-Plus viewpoint/init-state, filter on vs off, same seeds \u2014 essentially free (no training run).",
+   "novelty_confidence": 0.7,
+   "pre_flag": ""
+  },
+  {
+   "id": "C20",
+   "name": "Funnel-Gated Re-Inference (adaptive chunk horizon via prescribed-performance control)",
+   "source_domain": "funnel control / prescribed performance control",
+   "mechanism": "Wrap execution in a funnel-control monitor: define a scalar/low-dim tracking error e(t) (predicted-vs-realized end-effector pose from the last chunk, from proprioception) and a time-varying funnel boundary phi(t) that starts wide and decays. While e(t) stays inside phi(t), keep executing the current open-loop chunk (skip backbone passes); when e(t) approaches the boundary, force early re-inference. No neural net \u2014 a model-free high-gain feedback law used only as a re-trigger.",
+   "source_papers": [
+    "arXiv 2302.01754 (Berger et al., robust funnel MPC)",
+    "arXiv 2310.15544 (Berger et al., funnel control with internal models)",
+    "arXiv 2602.22458 (Dennst\u00e4dt thesis, funnel MPC)",
+    "Bechlioulis & Rovithakis, IEEE TAC 2008 (prescribed performance control, foundational)"
+   ],
+   "vla_bottleneck": "latency/compute (backbone dominates) and long-horizon drift (fixed-schedule re-inference lets error accumulate silently)",
+   "mechanistic_story": "The funnel gives a formal, monotonically-tightening bound on allowable tracking error instead of a fixed re-plan interval. On easy rollouts the funnel lets the policy run the backbone far less often (cutting compute/latency); when a perturbation pushes the trajectory off nominal, the funnel catches it early \u2014 before it compounds into a chunk-boundary failure \u2014 and forces a fresh VLM call.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "robustness",
+    "success rate"
+   ],
+   "nearest_vla_prior_art": "Closest is killed #3 (continuation-conditioned/RTC AR decoding, 2512.05964, 2606.13355) \u2014 but RTC changes the decoder architecture/training; funnel-gating is a training-free, architecture-agnostic runtime monitor deciding WHEN to call the backbone, applicable to flow-matching/L1/AR heads unmodified.",
+   "integration_path": "Near-zero-parameter wrapper in lerobot's rollout loop around select_action/chunk-execution: track a scalar error from proprioception, compare to a hand-set/tuned funnel schedule, short-circuit into an early backbone call when breached. Only 2-3 funnel hyperparameters to tune; inference-only, testable in under a day.",
+   "novelty_confidence": 0.75,
+   "pre_flag": "Replan-cadence cluster (C20/C31/C42/C43/C51/C52/C29): adjacent to killed #3 (RTC) and crowded adaptive-chunking (DVAC, HiPolicy, AAC)."
+  },
+  {
+   "id": "C21",
+   "name": "Reconsolidation-Style Associative Memory for Perceptual Robustness",
+   "source_domain": "cognitive science \u2014 memory reconsolidation / attractor dynamics",
+   "mechanism": "A small (~5-10M param) modern-Hopfield/dense-associative-memory layer between the raw per-camera embeddings and the frozen backbone input. Offline, store a compact prototype bank (hundreds-to-thousands of clustered embeddings) of clean training-distribution viewpoint/lighting states. At inference, a perturbed observation undergoes one or two Hopfield pattern-completion steps that pull it toward the nearest stored clean-manifold attractor before the frozen backbone sees it.",
+   "source_papers": [
+    "Hopfield 1982, PNAS 79(8)",
+    "Nader, Schafe & LeDoux 2000, Nature 406 (reconsolidation)"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus (viewpoint and lighting are the named worst factors)",
+   "mechanistic_story": "Reconsolidation theory holds a retrieved memory trace is briefly labile and actively repaired against the current (possibly corrupted) context before use \u2014 a correction step, not a static lookup. A frozen backbone has no equivalent: a perturbed view feeds straight through. An attractor-based correction layer actively pulls the perturbed embedding back toward the nearest clean-training attractor before the backbone ever sees it \u2014 repairing the input rather than hoping frozen features generalize.",
+   "dimensions_improved": [
+    "robustness",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "Closest are memory-augmented VLA robustness papers \u2014 MAP-VLA (2511.09516), MemoryVLA (2508.19236), SOMA (2603.24060) \u2014 and 'When Robots Sleep' (2606.17493). All retrieve/replay stored experience for in-context adaptation or continual-skill stability; none use attractor/Hopfield pattern-completion on the perception embedding itself to correct a single corrupted observation. Distinct from killed #2 (freeze more of the network): this adds an active correction module in front of the frozen backbone.",
+   "integration_path": "Dense-associative-memory layer between per-camera embeddings and the frozen connector; prototype bank built once via a forward pass over training rollouts, few learnable params (~5-10M, mostly read/write projection) trained with a reconstruction/contrastive objective on clean-vs-perturbed pairs (synthetic perturbations offline). A few hours on 1xA100.",
+   "novelty_confidence": 0.65,
+   "pre_flag": "Adjacent to crowded memory-module-for-long-horizon area; differentiator is attractor pattern-completion for single-observation correction, not experience replay."
+  },
+  {
+   "id": "C22",
+   "name": "Krum-Act (Byzantine-Robust Action-Chunk Aggregation)",
+   "source_domain": "Byzantine-robust distributed learning / robust aggregation",
+   "mechanism": "Draw K=5-8 stochastic action-chunk samples from the flow-matching head (different noise seeds, near-free). Instead of averaging or cosine voting, merge with a provably Byzantine-robust estimator \u2014 Krum (pick the sample with smallest summed distance to its n-f-1 nearest neighbors) or coordinate-wise trimmed mean \u2014 treating each sample as a 'client update' possibly corrupted by visual perturbation.",
+   "source_papers": [
+    "Blanchard et al., 'Machine Learning with Adversaries: Byzantine Tolerant Gradient Descent', NeurIPS 2017 (Krum)",
+    "Yin et al., 'Byzantine-Robust Distributed Learning', ICML 2018 (arXiv:1803.01498)"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus (viewpoint, lighting, distractors)",
+   "mechanistic_story": "Under visual perturbation a fraction of flow-matching samples land in a bad mode while the majority still track correctly \u2014 structurally identical to a Byzantine-client scenario. Robust-statistics aggregation with a proven breakdown point recovers the majority signal even under correlated corruption, unlike a heuristic similarity filter that can be fooled if the majority itself drifts.",
+   "dimensions_improved": [
+    "robustness",
+    "success rate",
+    "data efficiency"
+   ],
+   "nearest_vla_prior_art": "VOTE (arXiv 2507.05116) uses cosine-similarity committee voting over historical+current predictions, not a robust-statistics estimator with a formal corruption-tolerance guarantee. Delta is swapping the heuristic filter for Krum/trimmed-mean targeted at correlated OOD corruption.",
+   "integration_path": "Post-hoc aggregation after the flow-matching ODE solver returns K samples in modeling_smolvla.py; pairwise L2 + Krum/trimmed-mean selection. Zero trainable params, inference-time, frozen-backbone compatible.",
+   "novelty_confidence": 0.55,
+   "pre_flag": "K-sample aggregation cluster (C11/C22/C23)."
+  },
+  {
+   "id": "C23",
+   "name": "GossipVLA (Decentralized Gossip-Consensus Expert Ensemble)",
+   "source_domain": "gossip / epidemic algorithms for distributed averaging",
+   "mechanism": "Replace the single flow-matching expert with 4-6 much smaller replica decoder heads tapping different frozen SmolVLM2 layers/pooling. At inference, run a fixed few rounds of randomized pairwise gossip averaging (each replica blends its action-chunk estimate with a randomly paired replica, weighted by a learned trust scalar) instead of one centralized vote, converging geometrically to consensus without an O(K^2) centralized comparison.",
+   "source_papers": [
+    "Boyd, Ghosh, Prabhakar, Shah, 'Randomized Gossip Algorithms', IEEE T-IT 52(6), 2006",
+    "Demers et al., 'Epidemic Algorithms for Replicated Database Maintenance', PODC 1987"
+   ],
+   "vla_bottleneck": "parameter efficiency and robustness \u2014 ensemble-level reliability without one large expert or a centralized full-comparison ensemble",
+   "mechanistic_story": "A single small expert is a single point of failure. Many tiny replicas gossiping to consensus is cheaper than one big expert or a centralized vote, and gossip's proven geometric contraction to the network average gives a tunable compute/robustness dial (more rounds = closer to true ensemble consensus) settable per episode.",
+   "dimensions_improved": [
+    "parameter efficiency",
+    "robustness",
+    "latency"
+   ],
+   "nearest_vla_prior_art": "VOTE (arXiv 2507.05116) is a single centralized cosine-similarity comparison over one model's own historical rollouts, not a decentralized multi-replica gossip protocol with proven geometric convergence over independently-tapped heads. No VLA work found running multiple lightweight heads through randomized gossip rounds.",
+   "integration_path": "Replace the ~100M expert with 4-6 heads of ~5-10M params each tapping different frozen layers, plus a ~1K-param trust-weight vector and a fixed 2-3 round gossip loop over action-chunk embeddings before final decode. Comparable training budget to the current single expert; backbone frozen.",
+   "novelty_confidence": 0.6,
+   "pre_flag": "K-sample aggregation cluster (C11/C22/C23); also adjacent to MoE-VLA framing \u2014 differentiator is the decentralized consensus protocol."
+  },
+  {
+   "id": "C24",
+   "name": "Sketch-Bound Guardrail (AQP Confidence Sentinel)",
+   "source_domain": "databases \u2014 approximate query processing with provable error bounds",
+   "mechanism": "Maintain a small streaming sketch (Count-Min/AMS-style, few KB) over recent pooled vision-language features and predicted action-chunk statistics during rollout. Each control step, compute a provable (not learned) confidence interval on how far the current input deviates from the sketch's running in-distribution summary, in O(1) update time and fixed memory. On an out-of-bound flag, trigger a cheap deterministic fallback (shrink executed chunk length / force a re-observe).",
+   "source_papers": [
+    "Cormode & Muthukrishnan, 'Count-Min Sketch', J. Algorithms 2005",
+    "Hellerstein, Haas & Wang, 'Online Aggregation', SIGMOD 1997",
+    "Agarwal et al., 'BlinkDB', EuroSys 2013",
+    "PilotDB, Proc. ACM Manag. Data 2025"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus-style perturbation (viewpoint/init-state/lighting/distractor)",
+   "mechanistic_story": "Robustness collapse happens because the frozen backbone silently extrapolates on OOD inputs with no signal that it is doing so; ensemble/verifier uncertainty costs extra forward passes a frozen budget can't spare per step. A sketch gives a worst-case, provable error bound on distributional deviation with O(1) memory/update and zero extra backbone passes, so it runs every step nearly free and gates a cheap fallback exactly when the frozen backbone is least trustworthy.",
+   "dimensions_improved": [
+    "robustness",
+    "latency",
+    "compute efficiency"
+   ],
+   "nearest_vla_prior_art": "General OOD/shift detectors for robot learning exist (arXiv 2106.13703, 2211.09916, action-covariance likelihood-ratio) but all are learned/statistical estimators, not fixed-memory sketch-based provable-bound estimators. A general AQP-for-ML-serving pattern (arXiv 2607.00254) targets LLM/data workflows, not VLA action prediction. No VLA-specific sketch-guardrail found.",
+   "integration_path": "A few-KB Count-Min/AMS sketch between the frozen backbone and the flow-matching expert; hashes the pooled feature (or sampled action-chunk mean) into fixed-size counter arrays updated online (no gradients). Calibration pass on existing LIBERO-Long eval rollouts sets the threshold. On breach, a wrapper forces chunk_size down (50\u21928) for that step. <10K params.",
+   "novelty_confidence": 0.6,
+   "pre_flag": "OOD-monitor/escalation cluster (C1/C2/C3/C24/C15)."
+  },
+  {
+   "id": "C25",
+   "name": "Option-Critic Temporal Segmentation for Long-Horizon Re-planning",
+   "source_domain": "options / hierarchical RL (temporal abstraction)",
+   "mechanism": "Add a small option-critic module (meta-controller plus per-option termination head) over the frozen action-expert's hidden-state stream. Instead of a fixed chunk-size-50 clock, the module learns WHEN to terminate the current temporally-extended option (triggering fresh re-conditioning on language+vision) vs continue the in-flight chunk, trained via option-critic policy-gradient on sparse LIBERO-Long task-completion reward \u2014 no depth, no 3D pose.",
+   "source_papers": [
+    "arXiv:1609.05140 (Bacon, Harb, Precup, The Option-Critic Architecture)",
+    "arXiv:1605.05359 (Option Discovery via Spatio-Temporal Clustering)"
+   ],
+   "vla_bottleneck": "long-horizon (SmolVLA 49-71% vs OFT-7B 94%+ on LIBERO-Long)",
+   "mechanistic_story": "Long-horizon failure is largely a credit-assignment/re-planning problem \u2014 a flat chunked policy commits to a fixed 50-step horizon regardless of subtask boundaries. A learned termination function lets the controller re-condition exactly at subtask transitions (place-then-pick) instead of on a fixed clock, precisely the empirical motivation for options as temporal abstraction in long-horizon control.",
+   "dimensions_improved": [
+    "success rate",
+    "latency",
+    "robustness"
+   ],
+   "nearest_vla_prior_art": "GHOST (arXiv:2606.10025) is hierarchical but predicts explicit 3D end-effector sub-goals from RGB-D \u2014 geometry-dependent, adjacent to killed 3D-injection. LLM-augmented HRL scripts subtasks a priori via an LLM. No hit using the formal option-critic architecture with an RL-trained termination function on frozen VLA latents without geometric supervision.",
+   "integration_path": "Small transformer/MLP termination head (~2-5M params) plus option-embedding conditioning added to the action-expert context; trained with option-critic policy gradient on frozen backbone features using LIBERO-Long sparse success reward. A lightweight RL finetune of the small action expert on 1xA100.",
+   "novelty_confidence": 0.65,
+   "pre_flag": "Subtask-transition cluster (C25/C20/C16/C46/C40)."
+  },
+  {
+   "id": "C26",
+   "name": "Self-Conditioned Action Flow",
+   "source_domain": "diffusion-flow (self-conditioning / distillation-free sample-quality trick)",
+   "mechanism": "During training, with some probability run the action-expert's step with a zeroed 'previous clean-action estimate' channel to get a cheap x0-hat (no gradient), then re-run conditioning additionally on that x0-hat. At inference, each flow step reuses the PREVIOUS step's implicit clean-action estimate (available for free from v=(x-x0)/(1-t)) as extra conditioning \u2014 no added NFEs.",
+   "source_papers": [
+    "arXiv:2208.04202 (Chen, Zhang, Hinton, 'Analog Bits: ... Self-Conditioning', ICLR 2023)"
+   ],
+   "vla_bottleneck": "long-horizon collapse (SmolVLA 49-71% vs OFT-7B 94%+ on LIBERO-Long) via reduced per-chunk estimation noise, at zero added inference cost",
+   "mechanistic_story": "Standard flow matching predicts velocity purely from the current noisy sample and t, forgetting how earlier steps refined the estimate. Chen et al. show self-conditioning gives a large sample-quality gain at FIXED NFE because the network builds on its own running guess; the effect is largest at high noise, which for an action chunk corresponds to disambiguating the sub-goal before committing to fine motor detail. A better-conditioned per-step estimate reduces per-chunk noise that compounds across a long episode.",
+   "dimensions_improved": [
+    "success rate",
+    "robustness",
+    "latency",
+    "compute efficiency"
+   ],
+   "nearest_vla_prior_art": "Past-Token-Prediction (2505.09561) and Training-Time RTC condition on PAST CHUNK boundaries across the control loop \u2014 a different object from the WITHIN-CHUNK running denoising estimate. No VLA paper found reusing the within-trajectory x0-estimate as conditioning.",
+   "integration_path": "Modify the action-expert forward pass to accept an extra x0_hat input (zero-init on first call), concatenated with the noisy chunk before cross-attention; train with the standard 50%-probability self-conditioning recipe. Adds a small input-projection (~few hundred K params); same NFE, same data, fits the ~4h/20k-step finetune budget.",
+   "novelty_confidence": 0.65,
+   "pre_flag": ""
+  },
+  {
+   "id": "C27",
+   "name": "Weak-Self Autoguidance",
+   "source_domain": "diffusion-flow (classifier-free guidance variants)",
+   "mechanism": "Guide the flow-matching expert with an earlier/undertrained checkpoint of the SAME expert: v_guided = v_good + w\u00b7(v_good \u2212 v_bad). The 'bad' model is a checkpoint saved ~20% through training, so its errors are correlated with (not orthogonal to) the good model's, concentrated exactly where the good model is still uncertain.",
+   "source_papers": [
+    "arXiv:2406.02507 (Karras et al., 'Guiding a Diffusion Model with a Bad Version of Itself', NeurIPS 2024)"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus perturbation (viewpoint/init-state drop models from ~95% to 17-70%)",
+   "mechanistic_story": "Existing VLA guidance (ACG, RSS/Stable Language Guidance) extrapolates away from a deliberately degraded signal, which is known to push samples off-manifold when the base prediction is already uncertain \u2014 exactly the LIBERO-Plus regime where backbone features go OOD and the model must not overcommit to a confidently-wrong action. Autoguidance was purpose-built to fix this CFG failure mode by using a same-capacity, correlated-error 'bad' model, keeping guided samples closer to the data manifold.",
+   "dimensions_improved": [
+    "robustness",
+    "data efficiency",
+    "compute efficiency",
+    "parameter efficiency"
+   ],
+   "nearest_vla_prior_art": "ACG (2510.22201, guides using an 'incoherent variant', aimed at temporal smoothness) and Stable Language Guidance / RSS (2601.04052, decomposes vision vs language causal contribution). Neither uses an undertrained-checkpoint-as-guide for distribution-shift robustness.",
+   "integration_path": "Inference-time on SmolVLA's flow-matching expert: periodically checkpoint during training (disk-only), pick an early checkpoint as v_bad, run two ~100M forward passes per denoising step (backbone features cached/shared once). Zero new trainable params. Testable in hours by modifying the lerobot smolvla sampler loop.",
+   "novelty_confidence": 0.6,
+   "pre_flag": ""
+  },
+  {
+   "id": "C28",
+   "name": "Robustness Sinks (Learned Attention-Sink Tokens for the Action Expert's Cross-Attention)",
+   "source_domain": "llm-systems: attention sinks / streaming attention",
+   "mechanism": "Concatenate a small fixed set of trainable 'sink' embeddings (position-invariant, no scene content) into the frozen VLM's key/value sequence that the action expert cross-attends to. The sinks are never evicted; they give cross-attention queries a stable, low-information target so no single spurious visual token can absorb a disproportionate share of attention mass.",
+   "source_papers": [
+    "arXiv 2309.17453 (Xiao et al., StreamingLLM)",
+    "arXiv 2510.15731 (Attention Sinks in Diffusion Language Models)",
+    "arXiv 2604.10098 (Attention Sink in Transformers: A Survey)"
+   ],
+   "vla_bottleneck": "robustness / perturbation collapse \u2014 LIBERO-Plus 17-70% drops under viewpoint/lighting/init-state; ViTs form high-norm 'artifact' tokens that hijack attention and move to unpredictable locations under shift",
+   "mechanistic_story": "StreamingLLM shows transformers need a reliable, cheap attention outlet or attention quality degrades when the natural sink token is perturbed. Under viewpoint/lighting shift, high-norm background tokens in the frozen encoder move, and cross-attention queries with nowhere safe to send unwanted mass instead lock onto these shifted artifacts, corrupting the pooled context. A dedicated always-present sink caps this failure mode without touching frozen weights.",
+   "dimensions_improved": [
+    "robustness",
+    "generalization",
+    "success rate"
+   ],
+   "nearest_vla_prior_art": "RetoVLA (arXiv 2509.21243) repurposes the frozen VLM's EXISTING DINO-style register tokens, feeding their spatial content into the action-planning module for accuracy \u2014 a content-reuse mechanism. This injects NEW trainable, content-free sink embeddings purely to bound attention entropy for robustness, not to add spatial information.",
+   "integration_path": "Add 4-8 trainable sink embeddings (a few hundred params \u00d7 embed dim) concatenated to the per-frame K/V sequence exposed to the action expert's cross-attention; no backbone updates, trains jointly with the flow-matching loss.",
+   "novelty_confidence": 0.6,
+   "pre_flag": ""
+  },
+  {
+   "id": "C29",
+   "name": "MinIntervene: Minimal-Intervention Selective-Replanning Controller",
+   "source_domain": "optimal feedback control / minimum-intervention principle",
+   "mechanism": "Learn a task-relevant vs task-irrelevant subspace split from demo-trajectory covariance (uncontrolled-manifold-style: which state directions predict task success vs vary freely across successful demos). At inference, trigger a new expensive VLM-conditioned replan only when the tracked state's deviation from the committed chunk exceeds a threshold IN THE TASK-RELEVANT SUBSPACE; deviations in task-irrelevant directions (rendering-induced feature jitter) are left uncorrected and the committed chunk keeps executing open-loop.",
+   "source_papers": [
+    "Todorov & Jordan, 'Optimal feedback control as a theory of motor coordination', Nature Neuroscience 2002",
+    "Todorov & Jordan, 'A Minimal Intervention Principle for Coordinated Movement', NeurIPS 2002"
+   ],
+   "vla_bottleneck": "latency/compute (unnecessary replanning) and robustness (LIBERO-Plus viewpoint/init-state, plus long-horizon jerk from over-frequent re-planning)",
+   "mechanistic_story": "Biological motor control corrects only deviations that threaten the task goal, which is why natural reaching shows high variability in task-irrelevant dimensions but converges tightly on task-relevant ones. A VLA that replans on every feature wobble reacts uniformly to noise regardless of task relevance, wasting compute and plausibly causing viewpoint/lighting-triggered failure since those perturbations move features in often-task-irrelevant directions. Gating replanning by a learned task-relevant-error signal targets this by construction.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "robustness",
+    "success rate"
+   ],
+   "nearest_vla_prior_art": "arXiv 2510.00037 (killed via its re-render pipeline) characterizes perturbation sensitivity but proposes no inference-time minimal-intervention gate. 'Observing and Controlling Features in VLA' (arXiv 2603.05487) does representation steering, not a task-relevant subspace-gated replanning controller. Distinct from killed #3 (RTC) and killed #4 (re-render consistency): this is an inference-time control-theoretic gate needing no retraining and no re-rendered data.",
+   "integration_path": "Offline: PCA/CCA on demo-trajectory deviations vs task-success labels \u2192 low-dim task-relevant projection (a few thousand params). Online: project the tracked deviation onto this subspace; above threshold, trigger a fresh backbone forward + replan, else continue open-loop. Only the small projection and threshold are trained/calibrated.",
+   "novelty_confidence": 0.65,
+   "pre_flag": "Replan-cadence cluster (C20/C31/C42/C43/C51/C52/C29). Shares the task-relevant-subspace primitive with C4 (loss reweighting); different lever."
+  },
+  {
+   "id": "C30",
+   "name": "Interval-Gated Guidance",
+   "source_domain": "diffusion-flow (classifier-free guidance variants)",
+   "mechanism": "Apply any guidance term in the flow-matching expert (language CFG, ACG's coherence term, or autoguidance) only within a middle window of the denoising ODE, e.g. skip the first ~20% and last ~20% of steps, instead of the constant weight every existing VLA guidance paper uses.",
+   "source_papers": [
+    "arXiv:2404.07724 (Kynkaanniemi et al., 'Applying Guidance in a Limited Interval Improves Sample and Distribution Quality', NeurIPS 2024)"
+   ],
+   "vla_bottleneck": "latency (2x-cost guided sampling used unconditionally by every existing VLA guidance method) and robustness/success rate (guidance-induced artifacts at trajectory boundaries)",
+   "mechanistic_story": "Kynkaanniemi et al. showed guidance is harmful near pure noise (the field is uninformative about which mode will be reached, so guidance amplifies toward the wrong mode) and wasted near the clean sample. For action chunking this predicts two wins: cutting the extra guided forward pass outside the window is a direct NFE/latency reduction, and turning off strong guidance right before the chunk is fully denoised reduces boundary jerk/oversaturation \u2014 the instability ACG was built to fix, but ACG applies its correction at every step.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "success rate",
+    "robustness"
+   ],
+   "nearest_vla_prior_art": "None found applying a noise-level-dependent on/off guidance schedule to a VLA action expert \u2014 ACG (2510.22201), the Neuro-Symbolic Safety Guidance paper (2607.01378), and RSS (2601.04052) all apply their guidance term at every denoising step.",
+   "integration_path": "Small change to the SmolVLA/lerobot flow-matching sampler (policies/smolvla/modeling_smolvla.py): wrap whatever guidance term is active in an `if t_low < t < t_high` gate; tune the two scalars on a validation split. No new parameters; no retraining if layered on an existing guidance mechanism. Testable in an afternoon.",
+   "novelty_confidence": 0.6,
+   "pre_flag": ""
+  },
+  {
+   "id": "C31",
+   "name": "Tomasulo Fusion: Renamed-Buffer Out-of-Order Multi-Camera Fusion",
+   "source_domain": "out-of-order execution with register renaming and hazard detection",
+   "mechanism": "Keep a small per-stream ring buffer where each incoming camera frame gets a version tag ('rename'); a lightweight hazard classifier scores whether the current tuple of stream versions is safe to fuse given their timestamp skew, and if a stream is stale/missing it substitutes the last valid renamed version rather than blocking or fusing garbage \u2014 instead of SmolVLA's current barrier-sync of all camera streams before fusion.",
+   "source_papers": [
+    "Tomasulo, R.M. (1967), 'An Efficient Algorithm for Exploiting Multiple Arithmetic Units', IBM J. R&D 11(1):25-33"
+   ],
+   "vla_bottleneck": "robustness collapse under perturbation (LIBERO-Plus 17-70% drops; camera viewpoint and init-state worst; multi-camera async/dropout is a direct instance)",
+   "mechanistic_story": "Synchronous-barrier fusion bounds effective robustness by the single worst/slowest sensor at any instant; renaming decouples 'which physical buffer holds the freshest valid reading for this virtual slot' from 'did every physical sensor just fire', so the frozen backbone always gets consumable, hazard-checked input instead of blocking or silently fusing a stale/blank frame \u2014 reducing the sharp cliff under viewpoint/occlusion that the killed frozen-encoder direction ruled out at the representation level but not at the input-scheduling level.",
+   "dimensions_improved": [
+    "robustness",
+    "latency",
+    "generalization",
+    "success rate"
+   ],
+   "nearest_vla_prior_art": "Missing-camera robustness is addressed via training-time modality-dropout / disentangled fusion (arXiv:2606.15514) or continuous-time interpolation (Neural CDE, arXiv:2203.08715) \u2014 both data/training-objective fixes, not a runtime buffering-and-hazard-detection wrapper compatible with a frozen backbone.",
+   "integration_path": "A pre-connector module in the SmolVLA data pipeline: per-camera ring buffers (no learned params) plus a ~2-5M param hazard-classifier MLP trained on LIBERO-Plus perturbation replay (synthetic drop/delay on existing logs) to predict safe-to-fuse vs substitute-last-valid. Input-side wrapper; weights untouched. Under a day on 1xA100.",
+   "novelty_confidence": 0.65,
+   "pre_flag": "Latency-hiding / pipeline-scheduling tag (C31 input-fusion; C48/C51 encoder-scheduling) \u2014 systems-scheduling ideas around the frozen backbone."
+  },
+  {
+   "id": "C32",
+   "name": "Value-of-Computation Visual Token Economy",
+   "source_domain": "cognitive science \u2014 resource-rational metareasoning",
+   "mechanism": "A small (~2-5M param) metareasoning controller between the frozen SigLIP vision tower's per-region/per-camera tokens and the VLM connector estimates, per token/view, a Value-of-Computation = predicted reduction in the flow-matching expert's output uncertainty minus a fixed forwarding cost. Only tokens/views above threshold are forwarded through the frozen backbone; the rest are masked or replaced by a cached summary. Trained with a differentiable top-k/Gumbel-softmax gate plus a REINFORCE cost penalty, using realized action-entropy drop as reward.",
+   "source_papers": [
+    "Lieder & Griffiths 2020, BBS 43:e1",
+    "Gershman, Horvitz & Tenenbaum 2015, Science 349(6245)"
+   ],
+   "vla_bottleneck": "latency/compute (backbone dominates) and robustness under LIBERO-Plus distractors/viewpoint clutter",
+   "mechanistic_story": "Resource-rational analysis trades a computation's expected benefit against its cost. Most visual tokens (background, redundant views) carry near-zero VOC for the current action; forwarding them wastes FLOPs and lets task-irrelevant clutter/viewpoint noise leak into the pooled representation the head conditions on \u2014 the exact pathway LIBERO-Plus perturbations exploit. Gating to high-VOC regions cuts backbone FLOPs and starves the irrelevant-input pathway.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "robustness"
+   ],
+   "nearest_vla_prior_art": "No VLA paper found doing VOC-style per-token/per-camera gating on a frozen backbone. Closest are general metareasoning (VOC in MCTS 2002.04335; Rational Metareasoning for LLMs 2410.05563; cloud-robotics attention metareasoning 2505.03587) and DASIP (2511.20906, ODE-solver-depth adaptation) \u2014 all adapt a different resource, none gate spatial/camera tokens by an explicit VOC.",
+   "integration_path": "Input-side gating MLP over SigLIP patch tokens (or per-camera pooled tokens; SmolVLA ingests up to 3 views) masking tokens before the connector. No backbone/action-expert weights touched. ~2-5M params, trainable in a few hours using cached features plus an offline VOC-regression dataset from existing rollouts.",
+   "novelty_confidence": 0.6,
+   "pre_flag": "Adjacent to crowded early-exit/token-pruning/quantization (DeeR-VLA axis) \u2014 must be framed as spatial/camera-region value gating, NOT layer-depth early-exit."
+  },
+  {
+   "id": "C33",
+   "name": "Certified-Margin Action Head (Lipschitz-Constrained)",
+   "source_domain": "certified/robust RL \u2014 Lipschitz-constrained policy networks",
+   "mechanism": "Constrain the action head's weight matrices to bounded spectral norm (Bjorck orthonormalization / spectral normalization per layer) so the head is provably L-Lipschitz in its backbone-feature input. Combined with a direct measurement of the frozen backbone's feature shift under LIBERO-Plus-style perturbations (reusing diag_pooled_variance.py / diag_raw_pixels.py tooling), this gives a certified worst-case bound on how much a perturbed action can differ from the clean action, and lets L be tuned as a training target.",
+   "source_papers": [
+    "'On Robust RL with Lipschitz-Bounded Policy Networks', arXiv:2405.11432",
+    "Shi et al., 'Improve Robustness of RL against Observation Perturbations via l-infinity Lipschitz Policy Networks', arXiv:2312.08751"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus (~95% \u2192 17-70% under viewpoint/lighting/distractor) \u2014 the observation-perturbation-robustness setting Lipschitz policies were designed for",
+   "mechanistic_story": "Standard action heads have no bound on input-output sensitivity, so an unconstrained head can amplify a small backbone feature perturbation into a large, task-breaking action change \u2014 a plausible reason performance falls off a cliff rather than degrading gracefully. Constraining the head's Lipschitz constant caps that amplification by construction: given the measured feature-shift magnitude, the maximum induced action error is bounded, turning 'does the model happen to be robust' into a controllable, measurable training target.",
+   "dimensions_improved": [
+    "robustness",
+    "success rate",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "Lipschitz-bounded policy networks are established in observation-perturbation-robust RL (arXiv 2312.08751, 2405.11432) but no VLA-specific application surfaced. Scanner flags this as its weakest-verified spot-check (a dedicated 'VLA Lipschitz action head' search was not separately run) \u2014 recommend one targeted search before committing compute.",
+   "integration_path": "Replace the action head's final MLP/output layers with spectrally-normalized linear layers \u2014 a drop-in for head_l1_chunk.py's MLPResNet, same param count, adds a normalization step at forward/optimizer-step time. No backbone gradients, same training budget. Main new work is instrumenting the perturbation-vs-feature-shift measurement to pick a target L.",
+   "novelty_confidence": 0.55,
+   "pre_flag": "Scanner self-flagged as weakest-verified in its set; run one targeted 'VLA Lipschitz-bounded action head' search before compute."
+  },
+  {
+   "id": "C34",
+   "name": "Action Scratch Registers (Self-Attention Register Tokens Inside the Action Expert)",
+   "source_domain": "llm-systems: register tokens",
+   "mechanism": "Add a handful of trainable register tokens to the action expert's OWN self-attention among the 50 action-chunk tokens \u2014 a scratch space where the model can write chunk-level plan state (which sub-goal phase the chunk is in) without overloading individual per-timestep action tokens, then discard the registers before the action-decoding head.",
+   "source_papers": [
+    "arXiv 2309.16588 (Darcet et al., Vision Transformers Need Registers)"
+   ],
+   "vla_bottleneck": "long-horizon coherence \u2014 SmolVLA 49-71% on LIBERO-Long vs 94%+; action chunks spanning multi-stage tasks need chunk-level state per-timestep tokens aren't suited to carry",
+   "mechanistic_story": "Darcet et al. show ViTs repurpose low-informative tokens as scratch pads for global information when none is provided, corrupting those tokens' local features. Giving the action expert's self-attention explicit register slots for chunk-level bookkeeping should prevent it from overloading individual action tokens with global-plan information \u2014 the same fix applied to a different token population (action-chunk tokens instead of image patches).",
+   "dimensions_improved": [
+    "success rate",
+    "generalization",
+    "parameter efficiency"
+   ],
+   "nearest_vla_prior_art": "RetoVLA (arXiv 2509.21243) reuses the frozen VLM's DISCARDED register tokens, injecting spatial content into the action-planning module. This adds NEW registers inside the trainable action expert's own self-attention over action-chunk tokens, targeting temporal/planning coherence within one chunk \u2014 different token source, different attention (self- vs cross-), different bottleneck.",
+   "integration_path": "Prepend k learnable register embeddings (k~4-8) to the action-chunk token sequence inside the action expert's self-attention blocks only; drop them before the final flow-matching output projection. k \u00d7 embed_dim added params; trains with the existing flow-matching loss, no backbone gradients.",
+   "novelty_confidence": 0.55,
+   "pre_flag": ""
+  },
+  {
+   "id": "C35",
+   "name": "VIPER-style Programmatic Distillation of the Subgoal Sequencer",
+   "source_domain": "programmatic policies (imitation-projected program synthesis)",
+   "mechanism": "After training, distill only SmolVLA's high-level subgoal-sequencing behavior (which of ~5-10 discrete subgoals to condition on next \u2014 not the continuous control) into a compact symbolic decision-list program in a small DSL over frozen-backbone-derived object-presence/gripper-state predicates, via VIPER-style imitation-projected program search (imitate the neural sequencer's choices with a program using DAgger rollouts, then prune/verify). At inference the program replaces a full backbone forward pass at each subgoal transition; the frozen flow-matching expert still handles all low-level control.",
+   "source_papers": [
+    "Verma et al., PIRL, ICML 2018 (arXiv:1804.02477)",
+    "Bastani, Pu, Solar-Lezama, VIPER, NeurIPS 2018 (arXiv:1805.08328)"
+   ],
+   "vla_bottleneck": "latency (backbone forward dominates) and robustness (programmatic policies documented to generalize more reliably OOD than their neural teachers)",
+   "mechanistic_story": "Every subgoal transition currently re-invokes the ~450M backbone even though the decision is often a simple function of a handful of discrete predicates (object grasped? drawer open?). VIPER's core finding \u2014 a program distilled via imitation-projected search is both faster and more robust to distribution shift than the DNN it was extracted from, because its finite structured hypothesis space cannot overfit to spurious high-dimensional correlations \u2014 transfers directly: replacing only the subgoal-selection step cuts redundant backbone calls and should be less brittle to LIBERO-Plus perturbations that don't change the relevant predicates.",
+   "dimensions_improved": [
+    "latency",
+    "robustness",
+    "compute efficiency"
+   ],
+   "nearest_vla_prior_art": "'Learning Neuro-symbolic Programs for Language-Guided Robotic Manipulation' (arXiv:2211.06652) and ProgramPort (arXiv:2304.13826) compile natural-language instructions directly into programs via a learned parser (synthesis from scratch), not VIPER-style distillation of an already-trained neural policy's behavior into a verifiable program for latency/robustness. No paper found doing imitation-projected programmatic distillation of a VLA's subgoal-sequencing layer.",
+   "integration_path": "DSL over ~10-20 frozen-backbone-derived predicates; program search run offline via DAgger rollouts against the trained sequencer as oracle (CPU-bound); at inference the program replaces the backbone-forward subgoal-selection step, leaving the flow-matching expert untouched. Full extraction in hours.",
+   "novelty_confidence": 0.65,
+   "pre_flag": "Pre-flag vs killed #6 (distill-from-RL-teacher): this distills the model's OWN policy into a program (a mechanism/representation change for latency/robustness), NOT compression from an RL-tuned teacher."
+  },
+  {
+   "id": "C36",
+   "name": "MDL-Adapt \u2014 MDL-Optimal Plug-in Adapter Capacity Selection",
+   "source_domain": "minimum description length / two-part codes",
+   "mechanism": "Select the capacity (rank/width/bottleneck-dim) of any frozen-backbone plug-in adapter per task and per demo-count regime by minimizing a prequential (online) two-part MDL codelength \u2014 bits to describe the adapter weights plus bits to describe the demos given the adapter \u2014 instead of one hand-fixed capacity for every task.",
+   "source_papers": [
+    "Rissanen \u2014 Modeling by Shortest Data Description, Automatica 1978",
+    "Hinton & van Camp \u2014 Keeping Neural Networks Simple ..., COLT 1993",
+    "Blier & Ollivier \u2014 The Description Length of Deep Learning Models, NeurIPS 2018"
+   ],
+   "vla_bottleneck": "few-shot data efficiency at 10-25 demos, and parameter efficiency of the plug-in module itself",
+   "mechanistic_story": "A fixed-capacity adapter sized for the full dataset overfits a 10-demo task; MDL says the codelength-optimal capacity shrinks automatically with available data because a too-large adapter costs more bits to describe than it saves in prediction error. A prequential MDL criterion (codelength training sequentially on demos 1..i and predicting demo i+1, summed) as the capacity-selection rule gives a principled per-task adapter size, shrinking the average deployed adapter.",
+   "dimensions_improved": [
+    "data efficiency",
+    "parameter efficiency",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "Generic LLM LoRA rank-sweep studies exist (arXiv 2504.12397) but are not MDL/prequential-codelength-based and not applied to VLA adapters. No VLA paper found selecting adapter/bottleneck capacity via a description-length or prequential criterion tied to the few-shot demo-count regime.",
+   "integration_path": "A training-time wrapper around whichever plug-in module the lab ships (e.g. the RD-IB bottleneck, or a LoRA adapter): for each few-shot arm (10/25/50 demos), train a small capacity sweep, compute each one's prequential codelength on the held-out-in-order demo stream, keep the minimum-codelength capacity. No new inference params \u2014 a few extra short training runs (~hours total) per task.",
+   "novelty_confidence": 0.6,
+   "pre_flag": "Meta-method that composes with other candidates (e.g. C13); not a standalone contribution on its own."
+  },
+  {
+   "id": "C37",
+   "name": "Retrieved-Anchor Bridge Matching",
+   "source_domain": "diffusion-flow (Schr\u00f6dinger bridges / bridge matching)",
+   "mechanism": "Replace the action expert's Gaussian-noise-to-action path with a Schr\u00f6dinger-bridge path between the current (possibly perturbed) prediction and a retrieved reference: k-NN retrieve the nearest training-trajectory state in cached backbone-feature space (one-time FAISS index, no backbone gradient) and its action-chunk continuation, then run a small entropic bridge module (trained via iterative Markovian fitting) that transports toward that anchor with a tunable temperature.",
+   "source_papers": [
+    "arXiv:2303.16852 (Shi, De Bortoli, Campbell, Doucet, 'Diffusion Schr\u00f6dinger Bridge Matching', NeurIPS 2023)"
+   ],
+   "vla_bottleneck": "robustness collapse under LIBERO-Plus, specifically the worst factors (camera viewpoint ~56%, robot init-state ~32%)",
+   "mechanistic_story": "Flow matching always starts from an uninformative Gaussian prior; under perturbation the conditioning shifts OOD but the ODE source is blind to it, so the learned velocity field extrapolates confidently into the wrong region. A Schr\u00f6dinger bridge defines transport between two DATA-side endpoints with entropy-regularized paths, staying closer to the data manifold than a straight-line coupling extrapolated from noise, and supplies an explicit correction signal (the retrieved anchor) exactly when the raw prediction is least trustworthy.",
+   "dimensions_improved": [
+    "robustness",
+    "generalization",
+    "success rate"
+   ],
+   "nearest_vla_prior_art": "WarmPrior (2605.13959) uses the PREVIOUS CHUNK's own prediction as a warm-start prior for straightness/inference speed \u2014 a within-episode temporal prior aimed at latency, not a retrieved cross-episode anchor aimed at perturbation robustness. No retrieval-conditioned Schr\u00f6dinger-bridge VLA work found.",
+   "integration_path": "New lightweight bridge module (~20-30M params) alongside the flow-matching expert; build the FAISS index once over cached frozen-backbone features (reuses features already computed during training). Train the bridge with DSBM's iterative Markovian fitting on cached-feature/retrieved-anchor pairs. Backbone frozen; trainable in under a day.",
+   "novelty_confidence": 0.5,
+   "pre_flag": ""
+  },
+  {
+   "id": "C38",
+   "name": "Ground-Truth HER Relabeling for Few-Shot Action-Expert Training",
+   "source_domain": "hindsight goal relabeling (goal-conditioned RL)",
+   "mechanism": "For every LIBERO rollout (successful or not, including cheap autonomous/exploratory rollouts), relabel the language instruction in hindsight using the simulator's ground-truth achieved predicate (which object got picked/placed, which state became true) via HER's future/final relabeling. A trajectory that 'failed' instruction A but achieved state B becomes a valid positive (state, hindsight-instruction-B, action-chunk) BC pair. Multiplies the usable training set from a fixed small demo budget without new teleop and without VLM-generated (hallucination-prone) labels.",
+   "source_papers": [
+    "arXiv:1707.01495 (Andrychowicz et al., Hindsight Experience Replay)",
+    "arXiv:2102.12962 (Bias-reduced Multi-step HER)",
+    "arXiv:2209.13046 (Understanding Hindsight Goal Relabeling as Divergence Minimization)"
+   ],
+   "vla_bottleneck": "few-shot data efficiency at 10-25 demos (largely uncharacterized)",
+   "mechanistic_story": "BC starves on scarce demos because every rollout that doesn't match its assigned instruction is discarded. HER's insight is that any trajectory is a perfect demonstration for the goal it actually reached \u2014 reusing 'wrong-goal' rollouts as correct demonstrations for a relabeled goal multiplies effective training signal from the same collected data, directly attacking the few-shot gap rather than requiring more teleop. This is a relabeling mechanism, not data scaling.",
+   "dimensions_improved": [
+    "data efficiency",
+    "success rate",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "CAST (arXiv:2508.13446) uses a VLM to generate counterfactual language labels \u2014 the closest hit, but relabels via VLM-generated captions rather than ground-truth simulator state, and is not framed around few-shot data-multiplication or HER's explicit future/final relabeling-ratio schedule.",
+   "integration_path": "Pure offline data pipeline over the LIBERO demo + autonomous-rollout buffer; feeds the existing flow-matching BC loss unchanged. Zero new inference params; frozen backbone untouched. A few hours of relabeling plus a normal action-expert finetune.",
+   "novelty_confidence": 0.6,
+   "pre_flag": ""
+  },
+  {
+   "id": "C39",
+   "name": "Denoising-Depth Router (Token-Level Mixture-of-Depths in the Action Expert)",
+   "source_domain": "llm-systems: mixture-of-depths / conditional computation",
+   "mechanism": "Insert a lightweight top-k router at each self-attention/MLP block of SmolVLA's flow-matching action expert. At every layer the router scores the ~50 action-chunk tokens (conditioned on a learned embedding of the current ODE denoising timestep plus each token's chunk position) and only the top-k fraction get full attention+MLP compute that layer; the rest skip via the residual path, as in Mixture-of-Depths but applied to action tokens conditioned on flow timestep. Trained end-to-end with the flow-matching loss.",
+   "source_papers": [
+    "arXiv 2404.02258 (Raposo et al., Mixture-of-Depths)",
+    "arXiv 2412.16822 / CVPR 2025 (Layer- and Timestep-Adaptive Differentiable Token Compression for Efficient Diffusion Transformers)"
+   ],
+   "vla_bottleneck": "latency (flow-matching requires ~10 sequential integration passes per control step, dominating on-robot control frequency once the VLM cache is reused) and compute efficiency",
+   "mechanistic_story": "Early noisy denoising steps mostly fix coarse trajectory shape (low information per token), while late steps need precise per-timestep correction near the immediate control horizon \u2014 MoD lets the model learn to spend FLOPs where residual error is largest instead of applying uniform depth to every action token at every step.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "parameter efficiency"
+   ],
+   "nearest_vla_prior_art": "MoLe-VLA (arXiv 2503.20384, Mixture-of-Layers with a spatial-temporal router) does dynamic layer-skipping at whole-layer/whole-backbone granularity on the VLM, not token-level routing inside a frozen-compatible action expert conditioned on flow timestep.",
+   "integration_path": "Plug-in router (small MLP + top-k mask) added to each block of the existing action-expert transformer only \u2014 no backbone gradients. Router adds well under 1% extra parameters; trainable jointly with the standard flow-matching objective.",
+   "novelty_confidence": 0.55,
+   "pre_flag": "Adjacent to crowded early-exit/MoE-VLA area; differentiator is token-level flow-timestep-conditioned routing inside the action expert."
+  },
+  {
+   "id": "C40",
+   "name": "Execution-Guided Postcondition Verification for Closed-Loop Chunk Replanning",
+   "source_domain": "execution-guided program synthesis",
+   "mechanism": "Attach a small GNN 'postcondition checker' over language-grounded object-token nodes (from the frozen backbone's existing 2D patch tokens, no depth) that predicts the expected post-chunk object-relation graph from the pre-chunk graph plus the current chunk's flow-matching conditioning vector. After each real chunk executes, compare predicted vs observed post-chunk graph; a large mismatch injects a discrete 'retry/recover' conditioning token for the next flow-matching call instead of blindly continuing the pre-planned subgoal sequence.",
+   "source_papers": [
+    "Execution-Guided Neural Program Synthesis (Chen, Liu, Song, ICLR 2019, OpenReview H1gfOiAqYm)",
+    "Write, Execute, Assess: Program Synthesis with a REPL (arXiv:1906.04604, Ellis et al., NeurIPS 2019)"
+   ],
+   "vla_bottleneck": "long-horizon compounding error and robustness collapse under perturbation (LIBERO-Plus: 95%-models drop to 17-70%, worst factors viewpoint/init-state)",
+   "mechanistic_story": "SmolVLA executes chunks open-loop against its own plan; a perturbation-induced state mismatch is invisible to the sampler until it compounds over several chunks. Execution-guided synthesis's insight \u2014 condition generation on the actually-observed effect of the previous step, not just its intent \u2014 gives a cheap structural verification signal (predicted vs observed object-relation graph) that catches drift at the chunk boundary, before it propagates through the remaining 8-13 chunks.",
+   "dimensions_improved": [
+    "success rate",
+    "robustness",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "'Recover: A Neuro-Symbolic Framework for Failure Detection and Recovery' (arXiv:2404.00756) and arXiv:2405.18948 (IROS 2024) use a dense scene-graph transition model + discriminator, but for discrete TAMP-style symbolic re-planning over a hand-built planner, not embedded in a continuous frozen flow-matching VLA's chunk loop, and not at sub-500M scale. This keeps everything differentiable/continuous, triggering a conditioning-token change rather than symbolic re-search.",
+   "integration_path": "GNN postcondition checker (~3-8M params, 2-3 message-passing layers) between the frozen backbone and the flow-matching expert; trains on (pre-chunk graph, executed chunk, post-chunk graph) triples mined from existing rollouts, jointly with a learned 'recover' embedding. No backbone/expert gradients for the checker; joint fine-tune of the conditioning interface, <1 day.",
+   "novelty_confidence": 0.55,
+   "pre_flag": "Subtask-transition cluster (C25/C20/C16/C46/C40). Prediction-adjacent (predicts symbolic object-relation graphs, not latent/pixel state) \u2014 outside the world-model exclusion; audit may overrule."
+  },
+  {
+   "id": "C41",
+   "name": "Cognitive-Load-Decomposed Chunk Horizon & Replanning",
+   "source_domain": "cognitive science \u2014 cognitive-load theory",
+   "mechanism": "A small (~2-3M param) load estimator reads three separate signals each step: extraneous load (visual-token entropy/clutter from SigLIP features), intrinsic load (multimodality/curvature of the flow-matching velocity field from a few sampled draws), germane load (novelty of the current sub-goal, embedding distance from the last replanning point). These three signals \u2014 kept separate rather than collapsed into one difficulty score \u2014 set the action-chunk horizon and replanning cadence: long chunks/infrequent replanning during low-load habitual segments, short chunks/frequent replanning at high intrinsic/germane load.",
+   "source_papers": [
+    "Sweller 1988, Cognitive Science 12(2) (intrinsic/extraneous/germane load taxonomy)"
+   ],
+   "vla_bottleneck": "long-horizon collapse (SmolVLA Long 49-71% vs 94%+ for OFT-7B) and latency/compute efficiency",
+   "mechanistic_story": "Cognitive load theory decomposes load into causally distinct sources calling for different responses, rather than one scalar difficulty number. SmolVLA's fixed chunk size and cadence apply uniformly regardless of whether the moment is a repetitive low-load transport segment or a high-load stage transition \u2014 exactly where LIBERO-Long's gap concentrates. Decomposed-load-driven chunk horizon lets the policy spend its temporal budget where sub-goal structure is actually being constructed and coast through low-load segments cheaply.",
+   "dimensions_improved": [
+    "success rate",
+    "latency",
+    "compute efficiency"
+   ],
+   "nearest_vla_prior_art": "DASIP (2511.20906, NeurIPS 2025) adapts ODE/SDE solver depth per step via a learned difficulty classifier, cutting compute 2.6-4.4x. It uses one scalar difficulty to change per-step integration cost, not three decomposed cognitive-load signals to change the temporal chunk horizon/replanning cadence. Must cite DASIP explicitly.",
+   "integration_path": "A control-flow wrapper around the existing action-expert call: the load estimator reads intermediate backbone/flow activations already computed; its outputs (chunk horizon H, replan-trigger) gate how often the rollout loop calls the expert. ~2-3M new params, trained via short supervised regression against realized tracking error and replan-triggered success. <1 day.",
+   "novelty_confidence": 0.55,
+   "pre_flag": "Replan-cadence cluster (C20/C31/C42/C43/C51/C52/C29); cite DASIP as close prior art and argue decomposed-load/chunk-horizon is a different lever than solver-step depth."
+  },
+  {
+   "id": "C42",
+   "name": "Schema-Slot Fast-Binding for Few-Shot Generalization",
+   "source_domain": "cognitive science \u2014 schema learning / fast mapping",
+   "mechanism": "Factor the action expert's conditioning embedding into a 'schema code' (a small learned codebook of ~16-32 reusable motor schemas \u2014 pick, place, pour, open, rotate \u2014 via vector-quantizing action-chunk trajectories across LIBERO) and a 'slot filler' (an object/pose embedding read from vision via cross-attention). At few-shot adaptation, only the slot-filler pathway updates, via a single fast Hebbian outer-product write into a small key-value memory \u2014 no gradient descent, no backbone touch \u2014 mirroring one-shot fast mapping.",
+   "source_papers": [
+    "Carey & Bartlett 1978 (fast mapping)",
+    "Whittington et al. 2020, Cell 183(5) (Tolman-Eichenbaum Machine, structure/content factorization)"
+   ],
+   "vla_bottleneck": "few-shot data efficiency at 10-25 demos and cross-task/object generalization",
+   "mechanistic_story": "Schema theory and the Tolman-Eichenbaum Machine show biological generalization factors a reusable 'structure' code from task-specific 'content', so a new instance only fills its content slot. A flow-matching expert currently entangles both in one conditioning vector, so few-shot adaptation must nudge the whole network. Separating schema (reused, frozen after pretraining) from slot (one-shot, associatively written) lets a new object/goal be bound in a single fast write.",
+   "dimensions_improved": [
+    "data efficiency",
+    "generalization",
+    "parameter efficiency"
+   ],
+   "nearest_vla_prior_art": "AnySlot (2604.10432) addresses slot-level object placement but not a schema/content factorization with one-shot Hebbian binding. In-context-learning-for-VLA (TOPIC, CapVector \u2014 CLAUDE.md-crowded) uses prompting recipes, not an architectural schema-codebook + associative memory. None found combining fast-mapping one-shot binding with a structure/content-factored action head.",
+   "integration_path": "Insert a VQ bottleneck (~1M params codebook) plus a small cross-attention slot reader (~5-10M params) between the frozen backbone output and the flow-matching expert's conditioning; add a small external KV memory written via one Hebbian outer-product per new object/task. Backbone and codebook frozen after pretraining on the full LIBERO suite; only KV memory changes per task (inference-time adaptation).",
+   "novelty_confidence": 0.55,
+   "pre_flag": "Adjacent to crowded in-context-learning-for-VLA (TOPIC/CapVector); differentiator is the architectural schema-codebook + Hebbian associative memory, not prompting."
+  },
+  {
+   "id": "C43",
+   "name": "PRC \u2014 Progressive Rate-Distortion (Successive-Refinable) Action Chunking",
+   "source_domain": "rate-distortion theory / successive refinement",
+   "mechanism": "Add a nested per-step distortion term to the flow-matching training loss that enforces the successive-refinability (Markov) condition across ODE integration steps, so the sequence of intermediate chunk estimates becomes a formal progressive rate-distortion code: truncating the ODE at any NFE is guaranteed no worse than a single-shot model trained for that exact budget.",
+   "source_papers": [
+    "Equitz & Cover \u2014 Successive Refinement of Information, IEEE T-IT 37(2):269-275, 1991",
+    "Rimoldi \u2014 Successive Refinement of Information, IEEE T-IT 1994"
+   ],
+   "vla_bottleneck": "latency under a variable real-time compute budget, and long-horizon compounding error",
+   "mechanistic_story": "A flow-matching sampler's intermediate ODE states already refine over NFE, but nothing in the standard objective guarantees early truncation is rate-distortion-optimal for that budget, so ad hoc early stopping degrades unpredictably. Enforcing the successive-refinability Markov condition at training turns the ODE trajectory into a real progressive code, giving latency-adaptive control with a formal quality bound, and lets the model allocate more capacity to near-term chunk steps \u2014 the ones dominating long-horizon compounding error.",
+   "dimensions_improved": [
+    "latency",
+    "success rate",
+    "compute efficiency"
+   ],
+   "nearest_vla_prior_art": "'Denoising Tells When to Replan' (DVAC, arXiv:2606.03847) and related adaptive-chunking methods use the trained denoising trajectory as a TEST-TIME signal for when to replan \u2014 a heuristic read of a fixed model, not a training-time successive-refinability objective. Distinct from killed #3 (AR text-token continuation): PRC targets continuous ODE truncation for anytime compute. No paper found training a VLA head under an explicit successive-refinement constraint.",
+   "integration_path": "Add a nested-distortion auxiliary loss across a small set of ODE truncation points (NFE in {1,2,4,8}) to the existing flow-matching loss, computed on intermediate ODE states already produced during training \u2014 same expert, same param count, no new inference params. At deployment the controller picks NFE per compute budget.",
+   "novelty_confidence": 0.55,
+   "pre_flag": "Replan-cadence/adaptive-compute cluster; cite DVAC \u2014 training-time objective vs test-time heuristic read is the delta."
+  },
+  {
+   "id": "C44",
+   "name": "CS-Head \u2014 Compressed-Sensing Action Head",
+   "source_domain": "compressed sensing",
+   "mechanism": "Parameterize the action chunk as a sparse code in a fixed/lightly-learned dictionary and have the head regress only M random-projection measurement coefficients (M ~ k log(n/k) per RIP theory) instead of the full n-dim chunk, reconstructing via a fixed L1 or small LISTA-unrolled decoder at inference.",
+   "source_papers": [
+    "Cand\u00e8s & Tao \u2014 Decoding by Linear Programming, IEEE T-IT 2005",
+    "Donoho \u2014 Compressed Sensing, IEEE T-IT 2006",
+    "Cand\u00e8s, Romberg & Tao \u2014 Robust Uncertainty Principles, IEEE T-IT 2006"
+   ],
+   "vla_bottleneck": "few-shot data efficiency at 10-25 demos (explicitly flagged as largely uncharacterized)",
+   "mechanistic_story": "CS theory guarantees exact/stable sparse-code recovery from M<<n incoherent random measurements when the signal is k-sparse; action chunks are smooth, structured, low-complexity trajectories, plausibly k-sparse in a simple dictionary. A head fitting only M measurement coefficients has far fewer effective parameters to learn from scarce demonstrations, and RIP/incoherence gives an explicit, falsifiable prediction of how many demos are needed before recovery is reliable \u2014 turning 'compact heads help at low data' into a theory-derived sample-complexity bound.",
+   "dimensions_improved": [
+    "data efficiency",
+    "parameter efficiency",
+    "latency",
+    "compute efficiency"
+   ],
+   "nearest_vla_prior_art": "FAST/BEAST/OmniSAT/VQ-VLA (crowded area) use fixed dictionary/DCT/spline/VQ compression, but none frame the head as a compressed-sensing measurement operator with an RIP/incoherence recovery guarantee tying demo count to sparsity. 'ActionCodec' (arXiv 2602.15397) analyzes tokenizer desiderata as static design, not a random-projection recovery-guarantee construction. No compressed-sensing VLA action-head found.",
+   "integration_path": "Replace the output layer with a linear sensing layer producing M coefficients (sweep M=8-32) plus a small LISTA-style/fixed-L1 decoder (~1-3M params) reconstructing the full chunk at inference. Reuses the 10/25/50-demo few-shot protocol already planned.",
+   "novelty_confidence": 0.5,
+   "pre_flag": "Adjacent to crowded action-tokenizer/compact-head area (FAST/BEAST/VQ); differentiator is the RIP-based recovery-guarantee framing."
+  },
+  {
+   "id": "C45",
+   "name": "SynergyPrior: NMF-Derived Few-Shot Action Subspace Adapter",
+   "source_domain": "biology \u2014 muscle synergies / motor primitive dimensionality",
+   "mechanism": "From the K=10-25 demos of a few-shot task, factorize the action-chunk matrix with non-negative matrix factorization (as in EMG muscle-synergy extraction) into a small set of non-negative synergy vectors + time-varying activation coefficients. Freeze this per-task-family synergy basis and adapt only a tiny coefficient-prediction head on frozen VLM features, so few-shot learning fits a handful of non-negative activation weights per timestep instead of the full action-chunk manifold.",
+   "source_papers": [
+    "d'Avella, Saltiel, Bizzi, Nature Neuroscience 2003",
+    "Cheung, d'Avella, Tresch, Bizzi, J. Neuroscience 2005"
+   ],
+   "vla_bottleneck": "few-shot data efficiency at 10-25 demos (named as largely uncharacterized)",
+   "mechanistic_story": "Biological motor control avoids re-learning full activation patterns for every new movement by recombining a small individual-specific synergy basis; the CNS only tunes a few coefficients. Applied to few-shot VLA adaptation, a synergy basis extracted directly from the tiny target-task demo set (not a globally pretrained tokenizer) gives the adapter a much smaller effective output space exactly when data is scarcest.",
+   "dimensions_improved": [
+    "data efficiency",
+    "parameter efficiency",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "'Discovering Synergies for Robot Manipulation with Multi-Task RL' (arXiv 2110.01530) discovers a synergy space for dexterous-hand RL \u2014 closest precedent, but RL-trained end-to-end (not a frozen-backbone imitation adapter), not VLA/language-conditioned, not few-shot, and predates VLA. No hit combining synergy extraction with a frozen VLA backbone or LIBERO few-shot.",
+   "integration_path": "Offline per-task-family: NMF on the K-demo action-chunk tensor \u2192 synergy basis W (a few hundred params). Online: small MLP (pooled frozen-VLM feature \u2192 non-negative coefficients, ReLU/softmax-gated, tens of thousands of params) trained on the K demos; final action = W @ coefficients. Trains in minutes.",
+   "novelty_confidence": 0.45,
+   "pre_flag": "Close to the crowded compact-output-head territory (BEAST/B-spline); differentiator is the non-negative, demo-covariance-derived (not globally pretrained) basis \u2014 argue explicitly."
+  },
+  {
+   "id": "C46",
+   "name": "BucketGate (Token-Bucket Subgoal Admission Control)",
+   "source_domain": "traffic shaping / admission control (networking)",
+   "mechanism": "Treat each candidate subgoal transition as a packet requesting admission. A token bucket accumulates confidence tokens at a steady rate from a lightweight completion-confidence head; a transition is admitted only once accumulated tokens clear a threshold (sustained multi-timestep evidence), with burst capacity allowing fast admission when evidence is overwhelming but capping how fast transitions can chain, preventing cascading premature transitions.",
+   "source_papers": [
+    "Turner, 'New Directions in Communications', IEEE Comm. Mag. 1986 (ATM token-bucket)",
+    "Guerin, Ahmadi, Naghshineh, 'Equivalent Capacity ...', IEEE JSAC 9(7), 1991"
+   ],
+   "vla_bottleneck": "long-horizon failure (SmolVLA 49-71% on LIBERO-Long vs 94%+ OFT-7B) from cascading premature/missed subgoal transitions",
+   "mechanistic_story": "Long-horizon collapse is often a chain-of-errors problem: one premature transition propagates downstream. A token bucket admits a transition only after evidence has accumulated past a rate-limited budget, giving hysteresis against noisy single-frame confidence spikes while still permitting fast admission when evidence is unambiguous \u2014 the mechanism ATM networks use to smooth bursty traffic while bounding worst-case admission rate.",
+   "dimensions_improved": [
+    "success rate",
+    "robustness",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "SeqVLA (arXiv:2509.14138, completion-detection head for pi0) and StreamVLA (arXiv:2602.01100, 'Lock-and-Gated' completion-state gating) add a learned completion signal but gate on the instantaneous/lightly-filtered detector output, not a formally rate-bounded, burst-tolerant token reservoir. Delta is the debouncing/rate-limiting mechanism, not the general idea of completion gating.",
+   "integration_path": "One extra scalar (token count) in the LIBERO-Long rollout loop plus a ~50K-param MLP completion-confidence head trained on frozen features (same recipe as SeqVLA's detection head). Two tuned hyperparameters (fill rate, bucket size). No backbone gradients.",
+   "novelty_confidence": 0.4,
+   "pre_flag": "Subtask-transition cluster (C25/C20/C16/C46/C40); overlaps SeqVLA/StreamVLA completion gating \u2014 differentiator is only the rate-limiting mechanism."
+  },
+  {
+   "id": "C47",
+   "name": "Kinematic Address-Prefetch for Vision Encoding",
+   "source_domain": "hardware prefetching (stride/pattern/access-map predictors)",
+   "mechanism": "Once the flow-matching head commits an action chunk, the robot's future end-effector pose for the next K steps is known deterministically (forward kinematics) \u2014 an address, not a value, prediction. A lightweight predictor uses that known future pose plus recent optical-flow/attention history to pick the camera crop/region SmolVLM2's SigLIP tower will need next, and starts patch-embedding + early transformer blocks for that region on a separate CUDA stream while the cheap flow-matching ODE for the current chunk is still running \u2014 so vision features are warm when the real frame arrives.",
+   "source_papers": [
+    "SPPAM: Signature Pattern Prediction and Access-Map Prefetcher (arXiv:2602.04100)",
+    "ICP: Instruction-Correlation Prefetching (arXiv:2605.15645)",
+    "Toward Intelligent Prefetching: A Survey (arXiv:2606.09955)"
+   ],
+   "vla_bottleneck": "latency/compute \u2014 the vision tower forward is the largest single latency item in the control loop",
+   "mechanistic_story": "Prefetching works because address prediction is far cheaper than the fetch; here region prediction (an MLP over known-future pose + attention history) is far cheaper than the SigLIP forward it precomputes. Overlapping that forward with the current chunk's cheap denoising converts backbone latency from 'on the critical path every chunk' to 'hidden behind compute that was happening anyway'.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "success rate"
+   ],
+   "nearest_vla_prior_art": "F2F-AP (arXiv:2604.02408), AsyncVLA (arXiv:2602.13476), DEFLECT (arXiv:2605.19294), Speculative Policy Orchestration (arXiv:2603.19418) address the observation-execution latency gap by training the policy to tolerate/correct staleness or by using a generative world model to hallucinate frames. None do non-generative, address-only speculative precompute of encoder compute keyed off the committed chunk's known kinematics.",
+   "integration_path": "Wrapper ahead of the SmolVLA vision connector: a ~1-5M param MLP/GRU region predictor consumes the committed chunk (already in the buffer) + last N attention maps, outputs a crop/priority mask; SigLIP's patch embed + first few blocks run on that crop on a background CUDA stream during ODE integration, finalized once the true frame lands. Only the predictor is trained (supervised on logged attention/crop-utility). Under a day.",
+   "novelty_confidence": 0.5,
+   "pre_flag": "Latency-hiding/pipeline-scheduling tag (C47/C48); adjacent to crowded speculative-decoding-for-VLA \u2014 differentiator is address-only (non-generative) encoder precompute."
+  },
+  {
+   "id": "C48",
+   "name": "Subtask Branch Predictor with Speculative Squash",
+   "source_domain": "branch prediction (two-level adaptive / perceptron predictors)",
+   "mechanism": "Treat each subtask transition (pick\u2192place\u2192pick\u2192place in LIBERO-Long) as a branch. A small history-indexed predictor forecasts the top-2 likely next subtasks before the current one is confirmed complete; because the flow-matching expert is cheap relative to the frozen backbone, both candidate branches' action chunks are computed in parallel off a single shared backbone forward (different conditioning/goal tokens), and once a lightweight completion detector resolves which subtask finished, the correct chunk is committed instantly and the other is squashed.",
+   "source_papers": [
+    "Yeh & Patt (1991), 'Two-Level Adaptive Training Branch Prediction', MICRO-24",
+    "Jimenez & Lin (2001), 'Dynamic Branch Prediction with Perceptrons', HPCA-7"
+   ],
+   "vla_bottleneck": "long-horizon (SmolVLA 49-71% on LIBERO-Long vs 94%+); phase-transition latency and misidentified-subtask errors compound in this regime",
+   "mechanistic_story": "In long-horizon tasks the dominant latency/error cost is at subtask boundaries: the model must notice completion, then pay a full backbone-conditioning cycle before the next subtask's actions are ready, and a misjudged transition compounds downstream. Precomputing the likely next branch removes that cold-start gap at the transition (branch resolved \u2192 zero added backbone latency) the way branch prediction removes pipeline bubbles at control-flow changes.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "success rate"
+   ],
+   "nearest_vla_prior_art": "SeqVLA (arXiv:2509.14138), LoHo-Manip/trace-conditioned planning (arXiv:2604.21924), StreamVLA (arXiv:2602.01100), Speculative Verification for VLA (arXiv:2604.02965) all detect/verify a SINGLE current-plan hypothesis; none maintain and speculatively compute multiple candidate next-subtask branches in parallel with squash-on-resolve.",
+   "integration_path": "A ~1-3M param history-table predictor (keyed on recent action-entropy trace + language/goal embedding) alongside the flow-matching head; reuses one backbone forward per chunk but reruns the small expert twice with different goal conditioning for the top-2 branches. Needs a completion/transition detector trained on LIBERO's compositional subtask boundaries. Backbone frozen; under a day.",
+   "novelty_confidence": 0.5,
+   "pre_flag": "Subtask-transition + latency-hiding clusters; adjacent to crowded speculative-decoding-for-VLA."
+  },
+  {
+   "id": "C49",
+   "name": "VisionBP (Backpressure-Gated Perception)",
+   "source_domain": "backpressure routing / flow control (networking)",
+   "mechanism": "Model the action-execution buffer (queue of not-yet-executed actions from the last chunk) as a queue with occupancy Q. The vision encoder only runs a new expensive backbone forward pass when Q drops below a threshold (buffer draining) or an urgent interrupt fires (large frame-difference norm indicating scene change); otherwise cached visual tokens/actions are reused. Literal Tassiulas-Ephremides backpressure: upstream transmission (backbone compute) is throttled by downstream queue backlog, not a fixed clock.",
+   "source_papers": [
+    "Tassiulas & Ephremides, 'Stability properties of constrained queueing systems ...', IEEE CDC 1990 (extended IEEE TAC 1992)"
+   ],
+   "vla_bottleneck": "latency and compute efficiency (backbone dominates) while avoiding stale actions during fast scene changes (robustness)",
+   "mechanistic_story": "Backbone compute is currently spent on a fixed schedule independent of whether the queued actions are still valid. Tying backbone invocation to actual queue starvation spends compute exactly when needed, the principle that gives backpressure routing maximum-throughput stability \u2014 plus the urgent-interrupt path recovers robustness to scene changes a fixed clock would miss.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "robustness"
+   ],
+   "nearest_vla_prior_art": "Asynchronous fast-slow VLA producer-consumer buffers (arXiv 2512.20188) decouple inference/execution via a buffer, but re-inference is driven by wall-clock/thread scheduling, not an explicit backpressure control law coupling queue occupancy to upstream admission. Distinct from killed #3 (AR continuation).",
+   "integration_path": "Wrap the rollout loop's action-queue check (lerobot already tracks queue length) with a threshold + frame-diff interrupt; zero new trainable params for the basic version, optional ~1K-param threshold-tuning head. No backbone changes.",
+   "novelty_confidence": 0.55,
+   "pre_flag": "Replan-cadence cluster (C20/C31/C42/C43/C51/C52/C29): control-law gating of backbone invocation; sibling of C51 (AIMD)."
+  },
+  {
+   "id": "C50",
+   "name": "Attention-Guided Occlusion Training",
+   "source_domain": "llm-systems: KV-cache eviction / token-importance scoring",
+   "mechanism": "Reuse the pooled cross-attention importance scoring from SnapKV/H2O \u2014 normally used to decide which KV entries to evict at inference \u2014 purely as a training-time signal: periodically identify the highest-importance vision token(s) for the current batch and mask/zero them for a fraction of training steps, forcing the action expert to not collapse its evidence onto one or two visual tokens.",
+   "source_papers": [
+    "arXiv 2306.14048 (Zhang et al., H2O: Heavy-Hitter Oracle)",
+    "arXiv 2404.14469 (Li et al., SnapKV)"
+   ],
+   "vla_bottleneck": "robustness to distractors/viewpoint (LIBERO-Plus) and few-shot data efficiency (a free, targeted augmentation requiring no additional demonstrations)",
+   "mechanistic_story": "If the policy's cross-attention already concentrates on a small set of tokens (the phenomenon SnapKV/H2O exploit for compression), those tokens are exactly the single point of failure that camera shift, lighting change, or an added distractor will corrupt. Training-time occlusion of the model's own top-attention tokens is a targeted, mechanism-aware analogue of dropout/cutout that directly attacks over-reliance rather than random pixels.",
+   "dimensions_improved": [
+    "robustness",
+    "generalization",
+    "data efficiency"
+   ],
+   "nearest_vla_prior_art": "VLA-Cache (2502.02175), VLA-Pruner (2511.16449), SP-VLA (2506.12723), AURA (2606.02775), OxyGen (2603.14371) all use related attention-importance scores, but every one applies the score at INFERENCE time to evict/reuse KV entries for latency/memory, never as a TRAINING-time robustness augmentation with zero inference-time cost. Scanner flags this as the thinnest-differentiation idea in its set.",
+   "integration_path": "Pure training-time procedure: compute pooled attention scores over a calibration sub-batch every N steps, mask top-scoring vision tokens for a random subset of examples, otherwise unchanged forward/backward. Zero added parameters, zero added inference cost, frozen-backbone compatible.",
+   "novelty_confidence": 0.35,
+   "pre_flag": "Scanner self-flags thin differentiation vs a very crowded KV-importance area; novelty-audit should scrutinize whether training-time-vs-inference-time is a sufficient delta."
+  },
+  {
+   "id": "C51",
+   "name": "Flow-AIMD (Congestion-Controlled Replan Cadence)",
+   "source_domain": "congestion control (networking)",
+   "mechanism": "Maintain a persistent congestion window W = number of action-chunk steps to execute open-loop before the next VLM+flow-matching forward pass. After each sub-chunk, a tiny (~10K-param) MLP reads cheap already-available signals (proprio tracking residual, disagreement across flow-matching ODE seeds) and outputs a risk scalar. Clean signal \u2192 additive increase W+=1 (coast longer); risky \u2192 multiplicative decrease W/=2 (replan fast). Stateful across the whole episode, unlike a per-chunk threshold.",
+   "source_papers": [
+    "Chiu & Jain, 'Analysis of the Increase and Decrease Algorithms for Congestion Avoidance', Computer Networks 17:1-14, 1989"
+   ],
+   "vla_bottleneck": "latency/compute (backbone dominates) and robustness collapse under perturbation (LIBERO-Plus)",
+   "mechanistic_story": "SmolVLA re-invokes the full backbone on a fixed schedule regardless of scene difficulty. An AIMD feedback controller lets the policy stretch open-loop execution during stable segments and clamp down hard the instant a risk signal fires \u2014 the throughput-vs-loss tradeoff TCP solves for network links, applied to the staleness-vs-compute tradeoff of an action chunk, with formal convergence properties a memoryless threshold lacks.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "robustness"
+   ],
+   "nearest_vla_prior_art": "DVAC (arXiv 2606.03847) is closest \u2014 a memoryless per-chunk variance threshold, not a stateful multiplicative-backoff/additive-increase controller with persistent window. Distinct from killed #3 (RTC AR continuation) since it sits on top of ordinary flow-matching chunk execution.",
+   "integration_path": "Add to the lerobot rollout loop around select_action/chunk generation: one scalar W as loop state, one ~10K-param MLP risk estimator trained in minutes on rollout logs. No backbone/expert weight changes.",
+   "novelty_confidence": 0.45,
+   "pre_flag": "Replan-cadence cluster (C20/C31/C42/C43/C51/C52/C29); sibling of C49 (backpressure) and C20 (funnel) \u2014 competing control laws for the same trigger."
+  },
+  {
+   "id": "C52",
+   "name": "Snapshot-Isolated Action Commit (OCC-VLA)",
+   "source_domain": "databases \u2014 multi-version / optimistic concurrency control",
+   "mechanism": "Treat each action-chunk generation as an optimistic transaction: record the read-set (the observation-token snapshot the denoiser conditioned on) alongside the generated chunk. Before committing each action, cheaply diff the current live observation against the recorded read-set (pooled-feature distance, no model call); on divergence past a calibrated threshold mid-chunk, abort the remaining suffix and re-run generation from the fresh snapshot \u2014 OCC's read-set validation, not a fixed-latency compensator.",
+   "source_papers": [
+    "Bernstein & Goodman, 'Concurrency Control in Distributed Database Systems', ACM Comp. Surveys 13(2), 1981",
+    "Berenson et al., 'A Critique of ANSI SQL Isolation Levels', SIGMOD 1995"
+   ],
+   "vla_bottleneck": "latency-induced staleness during open-loop action-chunk execution, and its knock-on robustness cost",
+   "mechanistic_story": "Backbone inference is slow relative to control rate, so SmolVLA commits to a whole chunk from one stale observation and executes open-loop; if the world changes mid-chunk it has no mechanism to notice. OCC's read-set/validate-before-commit protocol gives an explicit, cheap conflict-detection step per action, turning staleness into a detectable, correctable event \u2014 directly attacking the blind multi-step execution window the handoff notes flag as a likely SmolVLA failure mode.",
+   "dimensions_improved": [
+    "robustness",
+    "latency",
+    "success rate"
+   ],
+   "nearest_vla_prior_art": "Asynchronous fast-slow decoupling (DuoCore-FS, arXiv 2512.20188) and delay-aware smoothing (Action ControlNet, arXiv 2606.25985) address staleness architecturally but neither records an explicit read-set nor performs threshold-based conflict validation with selective abort-and-regenerate.",
+   "integration_path": "Wrap SmolVLAPolicy.select_action/predict_action_chunk: cache the pooled feature used to condition the current sample as the read-set; each step compares its fresh pooled feature against the cached read-set via cosine/L2 (a few FLOPs, no model call); above threshold, discard queued actions and re-invoke the frozen expert on the fresh observation. Zero new params beyond a calibrated threshold.",
+   "novelty_confidence": 0.55,
+   "pre_flag": "Replan-cadence cluster (C20/C31/C42/C43/C51/C52/C29): observation-drift-triggered replan; differentiator vs C20/C29 is read-set feature divergence rather than tracking error."
+  },
+  {
+   "id": "C53",
+   "name": "Scoreboard-Gated Asynchronous Modality Issue",
+   "source_domain": "scoreboarding / pipelining with hazard detection",
+   "mechanism": "A scoreboard tracks per-source (vision, language, proprioception) freshness/ready bits and lets the ODE integrator issue its early denoising steps against already-ready sources, stalling only the specific step that first cross-attends to the still-in-flight vision features \u2014 instead of SmolVLA's current synchronous barrier where all encoders must finish before any denoising begins, even though proprioception is near-instant and language is often cached across an episode.",
+   "source_papers": [
+    "Thornton, J.E. (1964), 'Parallel Operation in the Control Data 6600', AFIPS FJCC"
+   ],
+   "vla_bottleneck": "latency/compute \u2014 a coarse all-or-nothing sync barrier wastes the interval where cheap modalities are ready but the expensive one is not",
+   "mechanistic_story": "A blanket barrier synchronizes on the slowest source every chunk even though only some denoising steps depend on it; fine-grained hazard tracking converts that fixed wait into a data-dependency-scoped wait, so the achievable control-loop period tracks the true critical path of the current chunk's cross-attention pattern instead of the backbone's worst-case latency \u2014 a pure scheduling change with no backbone gradients.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "success rate"
+   ],
+   "nearest_vla_prior_art": "F2F-AP (arXiv:2604.02408) and the Latency-Aware Framework for Visuomotor Policy Learning (arXiv:2602.14255) schedule already-computed action chunks against real-world clock time between inference calls (inter-chunk); neither tracks per-modality data dependencies WITHIN a single forward pass to let denoising issue before every encoder has returned.",
+   "integration_path": "A thin scheduler (<1M params, a small learned or rule-based per-source latency/dependency table) inserted into SmolVLAPolicy.forward/sample_actions between the three encoders and the flow-matching integrator, requiring encoders dispatched as separate async calls and the ODE loop to declare per step which source it cross-attends to. A refactor of the forward path plus the small scheduler; tunable in under a day.",
+   "novelty_confidence": 0.5,
+   "pre_flag": "Latency-hiding/pipeline-scheduling tag (C47/C48/C53)."
+  },
+  {
+   "id": "C54",
+   "name": "Bandit-Gated Execution Modes (Bao-VLA)",
+   "source_domain": "databases \u2014 learned query optimization / cost models",
+   "mechanism": "Train a small contextual bandit 'hint selector' (Thompson sampling over a handful of arms, as in Bao) that, per observation, picks among a small fixed menu of qualitatively different execution modes (chunk_size in {8, 50}, or flow-matching vs L1-head decode) rather than scoring many stochastic samples of the same type. Carries Bao's core trick: arm 0 is always the current shipped-default behavior, and the bandit is regret-bounded so it provably falls back to that default whenever confidence is low.",
+   "source_papers": [
+    "Marcus et al., 'Bao: Making Learned Query Optimization Practical', SIGMOD 2021 (Best Paper)"
+   ],
+   "vla_bottleneck": "latency/compute at precision-critical vs free-space moments, and long-horizon failure from a one-size-fits-all fixed chunk size",
+   "mechanistic_story": "SmolVLA uses one fixed chunk_size=50 for the whole episode; long-horizon tasks fail disproportionately at contact-rich sub-moments where a long open-loop chunk overshoots, while free-space transit pays full decode cost for no reason. A regret-bounded bandit switching among a small discrete menu gets the compute/latency win of short-chunk precision only when needed, with a hard safety guarantee (never much worse than the shipped baseline) that heuristic entropy-based adaptive-chunking lacks.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "success rate",
+    "robustness"
+   ],
+   "nearest_vla_prior_art": "Adaptive action-chunk-size methods are a crowded adjacent area: HiPolicy (arXiv 2604.06067), Adaptive Action Chunking at Inference-time (arXiv 2604.04161), Adaptive Q-Chunking (arXiv 2605.05544) \u2014 all pick chunk size via a learned heuristic/critic, none carry a formal regret-bounded bandit with a mandatory safe-default fallback in the Bao sense. Closest hit HiPolicy/AAC overlaps clearly.",
+   "integration_path": "A ~50K-param bandit head reads a lightweight feature of the pooled embedding + proprioception, outputs an arm among {chunk_size=50 flow default, chunk_size=8 flow, chunk_size=1 L1 fallback} before each action-expert call; trained via Thompson sampling on rollout return with a hard epsilon-floor on the default arm. Inference-time module only.",
+   "novelty_confidence": 0.35,
+   "pre_flag": "Replan-cadence / crowded adaptive-chunking cluster (HiPolicy/AAC); novelty must be framed narrowly around the safe-fallback/regret-bound, not 'adaptive chunk size' itself."
+  },
+  {
+   "id": "C55",
+   "name": "Workload View-Selection Skill Cache",
+   "source_domain": "databases \u2014 materialized view selection",
+   "mechanism": "Borrow the view-selection formulation (a lattice of candidate derived computations, each with benefit = query-frequency-weighted savings and cost = storage + incremental-maintenance overhead) to decide, at the level of the task/instruction WORKLOAD across many episodes, which intermediate language-conditioned subgoal representations are worth persistently caching vs recomputing from the frozen backbone. A small greedy/ILP selector picks the materialization set under a fixed budget, re-solving as the instruction-frequency distribution shifts.",
+   "source_papers": [
+    "Harinarayan, Rajaraman, Ullman, 'Implementing Data Cubes Efficiently', SIGMOD 1996",
+    "'Workload acceleration by optimizing materialized view selection using local search', 2026"
+   ],
+   "vla_bottleneck": "compute efficiency / backbone-dominated latency across a task distribution, without touching frozen weights",
+   "mechanistic_story": "The frozen backbone dominates inference cost, so the only lever for compute efficiency is deciding what NOT to recompute. Existing VLA caching reuses computation WITHIN one rollout via recency/frequency heuristics. A workload-level view-selection formulation instead asks which language-conditioned intermediate computations pay for their storage/maintenance cost often enough across the actual skewed instruction distribution to persist across episodes \u2014 a benefit-vs-maintenance-cost optimization rather than an LRU/frequency heuristic, landing on a better Pareto point because it accounts for maintenance cost recency caching ignores.",
+   "dimensions_improved": [
+    "compute efficiency",
+    "latency",
+    "parameter efficiency"
+   ],
+   "nearest_vla_prior_art": "VLA-Cache (arXiv 2502.02175), RoboMME (arXiv 2603.04639), ReCache (arXiv 2606.06060) are all within-episode recency/frequency-driven reuse, not a cross-episode workload-level cost-benefit selection with an explicit incremental-maintenance term. No workload/view-selection formulation found for VLA.",
+   "integration_path": "A selector alongside the SmolVLA language-conditioning path: log the distribution of instruction embeddings, build a candidate lattice of intermediate conditioning vectors, run greedy/ILP selection offline on the logged workload to choose a fixed cache of size B, and route matching instructions to the cached vector at inference (skipping the frozen backbone's language-conditioning forward for hits). Optional ~1M-param similarity-matching head; no new backbone params.",
+   "novelty_confidence": 0.45,
+   "pre_flag": "Adjacent to crowded KV-cache-reuse / VLA caching area; differentiator is cross-episode workload cost-benefit vs within-episode recency."
+  },
+  {
+   "id": "C56",
+   "name": "Step-Recurrent Flow Head (Linear-Recurrent State Across ODE Denoising Steps)",
+   "source_domain": "llm-systems: state-space models / linear attention",
+   "mechanism": "Instead of running ~10 independent full cross-attention passes (one per flow-matching integration step) each re-attending to the same frozen VLM context from scratch, thread a small SSM/linear-attention recurrent state through the denoising trajectory: each step updates a compact hidden state in linear time and only a cheap linear read-out re-derives the velocity field, rather than a full quadratic cross-attention recomputation every step.",
+   "source_papers": [
+    "arXiv 2312.00752 (Gu & Dao, Mamba)"
+   ],
+   "vla_bottleneck": "latency \u2014 the flow-matching expert's cost scales with the number of ODE integration steps, each paying full cross-attention cost against the cached context",
+   "mechanistic_story": "The ~10 denoising steps are a short, highly redundant sequence (each step's velocity prediction is close to the previous one); an SSM's linear-time recurrence is a natural fit for compressing that redundancy into a carried state instead of paying full attention cost every step \u2014 the efficiency argument Mamba makes for long token sequences, applied to the denoising-step sequence rather than the spatial/token sequence.",
+   "dimensions_improved": [
+    "latency",
+    "compute efficiency",
+    "parameter efficiency"
+   ],
+   "nearest_vla_prior_art": "FlowRAM (arXiv:2506.16201) and SpatialVLA-Mamba both combine Mamba with flow-matching, but they replace the action decoder's spatial/token processing with an SSM; they do not restructure computation across the DENOISING-STEP axis itself while leaving the per-step token architecture intact. This is the closest and most direct overlap.",
+   "integration_path": "Replace the repeated per-step cross-attention block in the action expert with a small SSM layer whose state persists across the ~10 integration calls within one control-step's flow solve (reset each new observation); everything remains inside the trainable action expert, no backbone gradients.",
+   "novelty_confidence": 0.4,
+   "pre_flag": "FlowRAM/SpatialVLA-Mamba are close (Mamba+flow-matching); differentiator is the denoising-step axis, which the audit should verify is genuinely untouched by those works."
+  },
+  {
+   "id": "C57",
+   "name": "CriticalInit: Edge-of-Chaos Initialization for the Action Expert's Temporal Memory",
+   "source_domain": "physics \u2014 criticality / edge-of-chaos dynamics",
+   "mechanism": "Whatever small recurrent/state-tracking component the action expert uses to carry information across chunk boundaries (e.g. a lightweight GRU/SSM memory bolted onto the flow-matching head to track task progress), initialize and constrain its recurrent weight spectral radius near the critical value rather than standard orthogonal/Xavier init, and monitor it during training to stay near criticality (a regularizer term, not a backbone change).",
+   "source_papers": [
+    "Bertschinger & Natschlager, 'Real-Time Computation at the Edge of Chaos in RNNs', Neural Computation 2004",
+    "Legenstein & Maass, 'Edge of chaos and prediction of computational performance', Neural Networks 2007"
+   ],
+   "vla_bottleneck": "long-horizon collapse and robustness/generalization (criticality is empirically linked to maximized memory capacity and generalization)",
+   "mechanistic_story": "Recurrent systems initialized deep in the ordered regime forget too fast (poor long-horizon memory); deep in the chaotic regime they amplify noise (poor robustness). The edge-of-chaos point jointly maximizes memory capacity and dynamic range \u2014 a near-zero-cost initialization/regularization choice that plausibly helps exactly the two named weak points of small VLA long-horizon tracking.",
+   "dimensions_improved": [
+    "success rate",
+    "robustness",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "None found applying edge-of-chaos/criticality tuning to any VLA component. General 'edge of chaos as guiding principle for NN training' work exists for generic classifiers/RL, not robotics/VLA.",
+   "integration_path": "Applies only to a recurrent/state-tracking module that would need to exist anyway for a long-horizon memory experiment (e.g. a small GRU auxiliary to the flow head, tens of thousands of params). Spectral-radius rescaling at init is one line; a soft criticality regularizer adds negligible cost.",
+   "novelty_confidence": 0.75,
+   "pre_flag": "Scanner itself says best framed as an ablation/add-on layered onto another candidate (e.g. C18 ReservoirAct or a long-horizon memory module), NOT a standalone paper \u2014 demoted accordingly despite high raw novelty."
+  },
+  {
+   "id": "C58",
+   "name": "Facility-Location Demo Coreset",
+   "source_domain": "active learning / coreset selection",
+   "mechanism": "Before few-shot finetuning at a fixed demo budget K (10/25), run k-center-greedy coreset selection over frozen-backbone embeddings of a larger candidate demo pool to pick the K most diverse/representative trajectories, replacing the field's default random or first-K selection, maximizing embedding-space coverage under the fixed labeling budget.",
+   "source_papers": [
+    "Sener & Savarese, 'Active Learning for CNNs: A Core-Set Approach', ICLR 2018 (arXiv:1708.00489)"
+   ],
+   "vla_bottleneck": "few-shot data efficiency at 10-25 demos \u2014 the project's own report names the few-shot crossover as its single load-bearing open axis",
+   "mechanistic_story": "At K=10-25 demos, which demos you get matters as much as which head you use: a random draw can by chance omit a whole manipulation phase (a failed-grasp recovery, a particular object pose), starving compact heads of exactly the coverage they need. Diversity-maximizing coreset selection over the already-cached backbone embeddings targets that coverage gap for near-zero extra compute, orthogonal to and composable with the planned head atlas. Data selection under a fixed budget, not data scaling.",
+   "dimensions_improved": [
+    "data efficiency",
+    "success rate",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "Demo-SCORE (arXiv:2503.03707, WebFetch-verified) filters a large heterogeneous dataset POST-HOC using a classifier trained on the policy's own online rollout successes, requiring the policy to already be running and a large pool; not upfront coreset selection under a fixed small budget with zero online-rollout requirement. 'Efficient In-context Demonstration Selection with Coreset' (arXiv:2511.08977) applies coreset to in-context prompting for LVLMs, not physical demonstrations for IL finetuning.",
+   "integration_path": "Standalone pre-processing script run once per task: mean-pool the frozen features already cached by backbone.py, run greedy k-center to pick K trajectories, feed that subset into the existing shot10/shot25 loops unchanged. Zero new params, minutes on CPU/GPU using cached embeddings \u2014 cheapest idea to pilot.",
+   "novelty_confidence": 0.68,
+   "pre_flag": ""
+  },
+  {
+   "id": "C59",
+   "name": "Query-Cracked Few-Shot Memory",
+   "source_domain": "databases \u2014 adaptive indexing / database cracking",
+   "mechanism": "Instead of building a full nearest-neighbor/cluster index over demonstration embeddings upfront or re-indexing wholesale as new demos arrive, apply the cracking principle: each retrieval query (an incoming instruction, or a new streamed demo) partially reorganizes the memory in place \u2014 the structure is never separately 'built', only refined as a byproduct of retrievals issued \u2014 so cost is paid only for regions of instruction-space actually queried, converging to a fine partition where deployment traffic concentrates and staying coarse elsewhere.",
+   "source_papers": [
+    "Idreos, Kersten, Manegold, 'Database Cracking', CIDR 2007",
+    "Idreos et al., 'Merging What's Cracked ...', VLDB 2011"
+   ],
+   "vla_bottleneck": "few-shot data efficiency at 10-25 demos, specifically the amortized cost of keeping a retrieval-based few-shot memory current online",
+   "mechanistic_story": "In the \u226425-demo regime, a full re-embed/re-cluster of a retrieval memory after every new demo is disproportionately expensive relative to the new data. Cracking's guarantee \u2014 reorganization cost proportional to queries actually issued, never a full rebuild \u2014 means a streamed few-shot loop pays near-zero upfront indexing tax and gets progressively cheaper and more accurate retrieval for recurring instruction patterns, the opposite of a static offline-built index.",
+   "dimensions_improved": [
+    "data efficiency",
+    "compute efficiency",
+    "generalization"
+   ],
+   "nearest_vla_prior_art": "Most crowded of its set. Retrieval-augmented few-shot/continual robot learning is active: STRAP (2412.15182), ROSER (2603.01474, explicitly 'efficiently indexing new data as it becomes available' for continual few-shot), Retrieve-then-Steer (2605.10094), TOPIC/FSAIL (2504.15517), Retrieve-Reason-Act (2603.02688). ROSER is functionally adjacent. The cracking distinction (reorg strictly as a side-effect of retrieval reads, workload-adaptive granularity) was not found verbatim but the surrounding territory is dense \u2014 a differentiator on an existing idea, not a clean gap.",
+   "integration_path": "Replace a conventional FAISS/kNN index over demo embeddings (auxiliary few-shot conditioning for the language input) with a cracked column-store-style array: on each retrieval, partition the queried region around the query embedding (O(log n) partial sort), so the structure is exact only where queries touched it. A few hundred lines; no new trainable params \u2014 a systems-layer change.",
+   "novelty_confidence": 0.3,
+   "pre_flag": "Hard pre-flag: most-crowded retrieval-augmented-few-shot area (ROSER functionally adjacent); scanner says not a clean gap. Ranked last; novelty-audit likely decides its fate."
+  },
+  {
+   "id": "C60",
+   "name": "MDL note / composed meta-methods placeholder",
+   "source_domain": "n/a",
+   "mechanism": "n/a",
+   "source_papers": [],
+   "vla_bottleneck": "n/a",
+   "mechanistic_story": "PLACEHOLDER \u2014 see note. This slot is intentionally unused; the 59 substantive candidates above (C1-C59) are the consolidated list. Retained only to make the count explicit; treat as empty.",
+   "dimensions_improved": [],
+   "nearest_vla_prior_art": "n/a",
+   "integration_path": "n/a",
+   "novelty_confidence": 0,
+   "pre_flag": "IGNORE \u2014 placeholder, not a real candidate. Final substantive count is 59 after 6 exclusion drops and 1 merge; do not audit this entry."
+  }
+ ],
+ "dropped": [
+  {
+   "name": "Imagination-Trained Adaptive Chunk Gating",
+   "reason": "HARD EXCLUSION (a) \u2014 world model / imagination-based planning: an RSSM-lite latent dynamics model with a Director-style manager trained via actor-critic on IMAGINED rollouts inside the learned model. Core mechanism is exactly a world-model + dreaming planner."
+  },
+  {
+   "name": "World-Model Surprise Loss Reweighting",
+   "reason": "HARD EXCLUSION (a) \u2014 latent dynamics model: core mechanism is a trained action-conditioned latent dynamics predictor (embedding_t + action_t -> embedding_{t+1}); the surprise signal it produces is incidental to the excluded predictor."
+  },
+  {
+   "name": "Training-Only Cross-View Predictive Consistency",
+   "reason": "HARD EXCLUSION (a) \u2014 explicitly JEPA-style predictive model: a predictor trained to predict a second camera's frozen-backbone embedding from the current one (V-JEPA 2 / multi-view world model lineage). Named JEPA in its own mechanism."
+  },
+  {
+   "name": "Action-Free Slot Pretraining",
+   "reason": "HARD EXCLUSION (a) \u2014 mechanism as written is SAVi next-frame slot + optical-flow prediction plus an action-conditioned slot transition model: video-prediction pretraining and a latent dynamics model by name, and the value claim rests on that predictive pretraining. (Also 0.4 novelty with close object-centric prior art.)"
+  },
+  {
+   "name": "Smith-Predictor Efference-Copy Delay Compensator",
+   "reason": "HARD EXCLUSION (a) \u2014 latent dynamics model: f(z_t, a_issued) -> z_hat_{t+1} is a learned latent forward model on the plain reading. Secondary: VLA-Corrector (arXiv 2607.01804) trains the same building block, and novelty is 0.3."
+  },
+  {
+   "name": "Corollary-Discharge Gated Visual Attention",
+   "reason": "HARD EXCLUSION (a) \u2014 action-conditioned prediction of per-patch feature displacement plus a next-frame patch-prediction pretraining loss is a latent feature-dynamics predictor; same 'train-a-predictor, use-the-residual' shape as the dropped world-model items, so dropped for consistency."
+  },
+  {
+   "name": "Attractor Action Head (DMP-Chunk)",
+   "reason": "MERGED into C8 (DMP-Chunk: Continuous-Phase Attractor Action Head). Same core mechanism (DMP action head replacing the flow-matching/L1 head); its init-state self-correction story, head-atlas/head_dmp.py integration, closed-form LWR fit loss, and nearest-prior-art (KeyMPs 2504.10011, Language Movement Primitives 2602.02839) were folded into C8."
+  }
+ ],
+ "raw_count": 67
+}

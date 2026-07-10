@@ -1,0 +1,813 @@
+[
+ {
+  "id": "C4",
+  "name": "Uncontrolled-Manifold Loss Reweighting",
+  "source_domain": "optimal feedback control theory / minimal-intervention principle",
+  "mechanism": "Estimate a low-rank, per-timestep task-relevant subspace of each action chunk from demonstrations (a small learned linear projector trained to predict task-completion/goal-state from partial perturbations of the chunk), then reweight SmolVLA's flow-matching regression loss to penalize deviation heavily along the task-relevant subspace and lightly (or not at all) in orthogonal 'uncontrolled' directions, replacing the uniform per-dimension L2 loss.",
+  "source_papers": [
+   "Todorov & Jordan, 'Optimal feedback control as a theory of motor coordination', Nature Neuroscience 2002",
+   "Scholz & Sch\u00f6ner, 'The uncontrolled manifold concept', Experimental Brain Research 1999"
+  ],
+  "vla_bottleneck": "robustness/generalization collapse under LIBERO-Plus init-state perturbation, plus long-horizon capacity wasted matching irrelevant per-step trajectory shape",
+  "mechanistic_story": "The minimal-intervention principle and uncontrolled-manifold concept explain why biological reaching is precise in task-relevant coordinates but variable elsewhere: correcting only what affects the goal makes control both robust (redundant DOFs absorb disturbance for free) and generalizable (never overfitting free directions). SmolVLA's uniform flow-matching loss spends equal capacity nailing every action dimension, including nuisance directions that vary freely across LIBERO-Plus init-state perturbations.",
+  "dimensions_improved": [
+   "robustness",
+   "generalization",
+   "data efficiency"
+  ],
+  "nearest_vla_prior_art": "None found applied to a learned VLA or imitation-learning loss. Search hits were the source neuroscience/control literature and a classical robot-arm feedback controller (PMC4940408) with no learned policy and no VLA.",
+  "integration_path": "Add a <1M param low-rank relevance projector trained jointly with (but architecturally separate from) the flow-matching expert; it only reweights the training loss matrix, adding zero inference-time latency or parameters once trained. Cheap diagnostic first: check whether the learned relevance subspace concentrates variance on task-relevant action dims on a handful of LIBERO tasks before training a full policy.",
+  "novelty_confidence": 0.75,
+  "pre_flag": "Shares the task-relevant-subspace primitive with C29 (MinIntervene); different lever (training loss vs inference replan gate), kept separate per audit guidance.",
+  "audit": {
+   "verdict": "NOVEL",
+   "evidence_papers": [
+    "PMC4940408 Uncontrolled-Manifold Reference Feedback Control of Multi-Joint Robot Arms (classical controller, no learned policy)"
+   ],
+   "novelty_confidence": 0.75,
+   "nearest_prior_art": "Only classical control (PMC4940408, hand-designed feedback controller for a robot arm, no learning) and the source neuroscience literature (Todorov & Jordan, Scholz & Sch\u00f6ner). No neural/learned imitation-learning or VLA application found.",
+   "notes": "No hits combining UCM-style task-relevant-subspace loss reweighting with any learned policy, VLA or otherwise. Confirms candidate's own claim."
+  },
+  "gate_result": {
+   "id": "C4",
+   "A_novelty": true,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": true,
+   "all_pass": true,
+   "reasons": "All pass: clean NOVEL audit (no learned-policy application of UCM/minimal-intervention loss reweighting found), attacks evidenced init-state robustness + data efficiency with a concrete overfit-to-nuisance-directions causal story, ships a cheap pre-registered diagnostic (does the learned subspace concentrate on task-relevant dims) plus a uniform-vs-reweighted ablation, applies to flow-matching (SmolVLA/pi0) and L1 (OFT) losses with <1M params and zero inference cost \u2014 the writeup must still cite classical minimal-intervention/variance-weighted LfD (Calinon-style) as adjacent prior art the audit did not surface."
+  },
+  "gate_pass_count": 6,
+  "debate_record": [
+   {
+    "id": "C4",
+    "round": "R1-supporter-vs-critic",
+    "killed": false,
+    "attack_summary": "The sharpest attack is a mechanism-to-bottleneck mismatch plus a demo-variance/causal-irrelevance conflation. LIBERO-Plus robustness collapse is perception-driven (frozen features shift under viewpoint/init-state perturbation), yet reweighting which action dimensions the flow-matching loss penalizes cannot change the state-to-action map's ability to handle a novel init state \u2014 the robustness claim routes only through an optimistic \"less overfitting improves OOD generalization\" argument. Worse, the \"uncontrolled\" subspace is the null space of a learned open-loop chunk-to-goal map; that null space need not be safe in closed-loop contact-rich execution, so relaxing those dims can produce noisier/invalid actions and hurt success. Secondary hits: it may reduce to trivial per-dim inverse-variance loss weighting (SmolVLA already normalizes actions), and it shares its core primitive with C29.",
+    "verdict_reasoning": "The critic scores real damage on the headline robustness rationale and on the demo-variance-equals-irrelevance assumption, but each major attack has a partial rebuttal (the data-efficiency/generalization framing survives independently, and capacity-control regularization is a legitimate OOD lever), so the critic does not clearly dominate. Novelty is audit-confirmed and the mechanism is frozen-backbone compatible with near-zero inference cost. Decisively for R1, the premise is gated by an explicit cheap diagnostic that would expose a non-concentrating subspace before any GPU-month run, so a false survivor is cheap to catch downstream \u2014 the concerns become bars to clear in later rounds, not grounds for a first-round kill."
+   },
+   {
+    "id": "C4",
+    "round": "R2-reviewer2",
+    "killed": true,
+    "attack_summary": "The relevance projector's proposed training signal does not exist: demos are success-only, so \"predict task-completion from partial chunk perturbations\" requires generating perturbed counterfactual sim rollouts per (state, chunk) \u2014 expensive, sim-oracle-dependent, and a hidden cost the integration path omits. Avoid that and you fall back to per-timestep demo inverse-variance weighting, which is classical LfD (Calinon minimal-intervention control, ProMP/GMR covariance-weighted tracking) and learned anisotropic loss weighting is heteroscedastic regression (Kendall & Gal 2017) \u2014 the audit's NOVEL verdict is an artifact of searching only \"uncontrolled manifold\" vocabulary. Mechanistically, chunks execute open-loop: relaxing loss in \"uncontrolled\" directions licenses drift off the demo manifold (compounding covariate shift), plausibly worsening the long-horizon bottleneck it claims to fix, and LIBERO's ~7-dim EE-delta action space lacks the DOF redundancy the UCM premise needs.",
+    "verdict_reasoning": "Both horns of the central dilemma are fatal: the novel version of the projector is infeasible without counterfactual rollout supervision, and the feasible version collapses into 15-year-old variance-weighted imitation plus standard heteroscedastic loss learning \u2014 so the delta over nearest prior art evaporates exactly when the method becomes runnable. On top of that, the causal chain to LIBERO-Plus is weak (its dominant failures are perception-side, untouched by an action-loss reweighting) and the method is a full action-expert retrain per condition per seed, not the cheap plug-in the project wants. A GPU-month on this would likely yield a noisy few-point delta with a reviewer-obvious prior-art rebuttal."
+   },
+   {
+    "id": "C4",
+    "round": "R3-area-chair",
+    "killed": true,
+    "attack_summary": "The minimal-intervention principle produces robustness through closed-loop feedback that exploits redundancy at execution time; C4 only reshapes the training loss of an open-loop chunk generator, leaving zero execution-time mechanism to absorb LIBERO-Plus viewpoint/init-state perturbations \u2014 so the robustness and generalization claims (2 of its 3 dimensions) rest on an analogy that does not transfer. What remains is anisotropic per-dimension loss weighting, whose effect a standard heteroscedastic/learned-variance baseline largely replicates for free (demo dims that vary freely get high variance and are auto-downweighted), and flow matching already allocates probability mass to free-varying directions rather than 'wasting capacity nailing' them, undercutting the stated capacity-waste mechanism. Additionally, labeling task-relevance honestly requires counterfactual perturbation rollouts in sim (a heavy pipeline), or it collapses to variance-correlation from demos \u2014 the exact baseline; and every ablation requires a full action-expert retrain, so it is a training recipe, not the plug-in module the project targets.",
+    "verdict_reasoning": "Even granting the clean novelty field (audit: NOVEL, 0.75), the credible effect is a modest data-efficiency/fitting gain on one dimension, not a plausible move on three: the causal chain to robustness/generalization is speculative and the nearest baseline likely captures most of the gain, making the headline a subtle loss-weighting ablation. A training-loss tweak with no inference-time component and likely single-digit gains on one axis is workshop-scale, not CoRL/RA-L/TMLR-scale, and validating it costs full policy retrains per ablation \u2014 exactly the false-survivor GPU-month risk this round exists to prevent."
+   }
+  ],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "C7",
+  "name": "Evidential Camera-Trust Gate",
+  "source_domain": "multi-view evidential deep learning / Dempster-Shafer sensor fusion",
+  "mechanism": "Add a small per-camera evidential head (2-layer MLP + softplus \u2192 Dirichlet evidence vector) on each camera's frozen vision-encoder+connector output (agentview + wrist). Combine per-view evidence via the closed-form Dempster-Shafer/Dirichlet rule before the fused representation reaches the action expert, replacing naive token concatenation. Trained with synthetic single-camera corruption (viewpoint jitter, brightness, occlusion patches one camera at a time) plus the TMC evidential loss, so a corrupted stream is automatically down-weighted at test time.",
+  "source_papers": [
+   "Han, Zhang, Fu, Zhou, 'Trusted Multi-View Classification with Dynamic Evidential Fusion,' arXiv:2204.11423"
+  ],
+  "vla_bottleneck": "robustness collapse under LIBERO-Plus, specifically camera-viewpoint, the single worst-performing factor (~56% for OFT-class models)",
+  "mechanistic_story": "A frozen backbone's fixed pooling/concatenation over camera streams cannot detect that one stream (agentview after a viewpoint shift) is corrupted while the other (wrist-cam) is intact; it blends the bad signal in uniformly. An evidential per-view confidence gate, trained to output low evidence under synthetic single-view corruption, discounts the corrupted stream and leans on the intact one \u2014 directly targeting the largest measured LIBERO-Plus failure mode.",
+  "dimensions_improved": [
+   "robustness",
+   "success rate",
+   "generalization"
+  ],
+  "nearest_vla_prior_art": "'Viewpoint-Agnostic Manipulation Policies with Strategic Vantage Selection' (arXiv 2506.12261, WebFetch-verified) is STATIC train-time camera-placement selection, not dynamic per-inference trust-weighting of available views. 'LIBERO-Occ' (arXiv 2606.10862) does generative viewpoint imagination, not evidential fusion of existing views.",
+  "integration_path": "Insert between SmolVLM2's per-camera output and the point where camera tokens merge before the flow-matching expert. Per camera: one small MLP (~hundreds of K params); 2 cameras in LIBERO. Combination is closed-form (no extra learned params). Trains jointly using cached-feature infra plus live forward passes only for the small head; hours on 1 A100.",
+  "novelty_confidence": 0.72,
+  "pre_flag": "",
+  "audit": {
+   "verdict": "NOVEL",
+   "evidence_papers": [
+    "Han, Zhang, Fu, Zhou - Trusted Multi-View Classification with Dynamic Evidential Fusion (arXiv:2204.11423)",
+    "Uncertainty-Aware Evidential Fusion for Multi-Modal Object Detection in Autonomous Driving (MDPI)",
+    "Evidential Active Recognition: Intelligent and Prudent Open-World Embodied Perception",
+    "Dual-level Deep Evidential Fusion (medical multimodal)"
+   ],
+   "novelty_confidence": 0.65,
+   "nearest_prior_art": "Han et al. TMC (Dempster-Shafer/Dirichlet dynamic evidential fusion) - the candidate's own cited source technique, applied to generic multi-view classification, not VLA/robot manipulation. Adjacent evidential-fusion work exists in autonomous driving object detection and medical imaging, never in VLA camera-trust weighting.",
+   "notes": "No VLA or robot-manipulation paper found doing per-camera evidential/Dempster-Shafer trust-weighted fusion before the action expert. Mechanism is a domain transfer of an established general-ML technique (TMC) into VLA; no closer match surfaced across 4 searches."
+  },
+  "gate_result": {
+   "id": "C7",
+   "A_novelty": true,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": true,
+   "all_pass": true,
+   "reasons": "All pass: audit-verified NOVEL (no VLA/manipulation evidential per-camera fusion found in 4 searches), directly attacks the worst measured LIBERO-Plus factor (camera viewpoint) with a falsifiable per-view evidence-gating story, inserts at the encoder/fusion boundary shared by SmolVLA/pi0/OFT-class multi-cam VLAs, ~100s of K params trainable in hours on 1xA100 improving robustness+SR+generalization, and a first-in-VLA mechanism on the top documented failure mode is a credible RA-L/CoRL contribution."
+  },
+  "gate_pass_count": 6,
+  "debate_record": [
+   {
+    "id": "C7",
+    "round": "R1-supporter-vs-critic",
+    "killed": true,
+    "attack_summary": "LIBERO-Plus viewpoint shift is a systematic domain shift, not sensor corruption: the shifted agentview still carries all task information, so down-weighting it discards signal rather than recovering it, and the gain is hard-capped by wrist-cam-only sufficiency, which is doubtful for scene-level object localization (and init-state, the -88pt second-worst factor, is untouched). Worse, the method requires a synthetic single-camera corruption generator at training time, and that same generator applied as plain augmentation to the action expert is the mandatory fair baseline that uses a strict superset of the gate's training signal and, per LIBERO-Plus's own analyses, already recovers much of the drop. Finally, TMC's Dirichlet/Dempster-Shafer fusion is defined over class evidences; with a continuous flow-matching token interface and no classes it degenerates into a learned scalar gate, evaporating the evidential novelty into generic gated fusion over n=2 cameras.",
+    "verdict_reasoning": "The critic's two structural attacks hit premise and delta, not execution: expected headroom is capped because the mechanism treats domain shift as sensor failure with a likely-insufficient fallback view, and the augmentation baseline built from the method's own required corruption machinery probably dominates it. Verified novelty (audit NOVEL, 0.65) and low cost cannot rescue a mechanism whose best case is a small gain on one perturbation axis that a simpler baseline likely matches; under the kill-bias criterion this is a clear kill."
+   },
+   {
+    "id": "C7",
+    "round": "R2-reviewer2",
+    "killed": true,
+    "attack_summary": "The mechanism attacks the wrong layer for the headline failure mode: a LIBERO-Plus camera-viewpoint shift produces features that are OOD-but-still-informative, and with only two largely complementary (not redundant) views there is no good trust setting \u2014 keeping the shifted agentview feeds the frozen expert features it cannot decode, while down-weighting it removes the policy's only source of global scene geometry (the wrist cam is uninformative pre-grasp), so gating cannot recover the -91pt factor it is sold on. The evaluation is intrinsically confounded: the gate must be trained with synthetic single-camera corruption, which is itself a robustness intervention overlapping LIBERO-Plus's programmatic perturbations, so the fair baseline (SmolVLA finetuned with identical corruption/camera-dropout augmentation, no gate) plausibly captures most of the gain, leaving a gate-specific delta within 3-seed noise. Technically, TMC's Dirichlet evidence is defined over a classification simplex that does not exist in a continuous flow-matching pipeline, and Dempster-Shafer combination of exactly 2 sources degenerates to normalized product weighting \u2014 i.e., a learned scalar camera gate \u2014 while being at its most brittle (Zadeh's conflict pathology) in precisely the high-conflict regime targeted.",
+    "verdict_reasoning": "Killed: novelty is a thin straight transfer of TMC (audit's own confidence only 0.65) whose apparatus collapses to a two-stream learned gate, and the core scientific premise \u2014 that an intact view can substitute for a corrupted one \u2014 is unvalidated and likely false for LIBERO's complementary agentview/wrist setup, with no cheap diagnostic proposed. Even the best-case win is capped to the viewpoint slice (does nothing for init-state, the second -88pt factor) and must survive an augmentation-only baseline that the design cannot be disentangled from; the expected residual effect does not justify a GPU-month."
+   },
+   {
+    "id": "C7",
+    "round": "R3-area-chair",
+    "killed": true,
+    "attack_summary": "C7's three claimed dimensions (robustness, success rate, generalization) are one measurement counted three times \u2014 LIBERO-Plus perturbed success \u2014 so it is a single-factor patch on one benchmark axis, not a mechanism moving >=3 dimensions. Its ceiling is structurally capped: LIBERO-Plus viewpoint shift produces a valid-but-displaced agentview, not a corrupted one, and down-weighting it leaves a wrist-cam-only policy that lacks the scene-level information (object/target localization pre-grasp) needed to succeed, so discounting the 'bad' view cannot restore what the policy actually needs. With only N=2 cameras the Dempster-Shafer/Dirichlet machinery reduces to a learned scalar blend, and the training recipe (synthetic viewpoint jitter/brightness/occlusion) directly mimics the test perturbations \u2014 so trivial baselines (corruption-augmented head training, camera dropout, a 2-way softmax gate) plausibly capture most of the gain, leaving the evidential contribution unattributable.",
+    "verdict_reasoning": "Even granting the audit's NOVEL verdict, the audit itself calls this a domain transfer of TMC (2022) \u2014 technique transfer plus one perturbation factor on one sim benchmark family is workshop-tier positioning for CoRL/RA-L unless gains are both large and broad, and the mechanism's information-loss ceiling makes large gains implausible while the augmentation-confound makes attribution to the evidential rule doubtful. The best realistic outcome is an ablation-table entry on LIBERO-Plus camera factors, which does not justify a GPU-month against competing survivors that credibly touch long-horizon, latency, or data-efficiency as well."
+   }
+  ],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "R2",
+  "name": "ProbeAnchor: execution-time minimal-intervention retargeting in the referent frame",
+  "based_on": [
+   "C4",
+   "C17",
+   "C19",
+   "C29"
+  ],
+  "answers_attacks": "C4-R3: 'C4 only reshapes the training loss of an open-loop chunk generator, leaving zero execution-time mechanism to absorb LIBERO-Plus viewpoint/init-state perturbations' -> the minimal-intervention principle is moved to execution time: the executed chunk is corrected in the one task-relevant coordinate that is observably wrong (referent-relative geometric offset), everything else left as generated.\nC4-R2: 'the relevance projector's proposed training signal does not exist: demos are success-only ... requires generating perturbed counterfactual sim rollouts' -> no learned relevance projector exists: the task-relevant coordinate is declaratively known (relative pose of the language-selected referent object / EE), read by tiny probes trained on sim-state labels ALREADY present in the LIBERO demo HDF5 - supervised regression, no counterfactuals.\nC4-R3: 'every ablation requires a full action-expert retrain, so it is a training recipe, not the plug-in module the project targets' -> pure inference wrapper + ~1M-param probes; policy and expert weights untouched; every ablation is an inference-config flag.\nC19: 'the filter updates on an observed action-execution error that is unobservable at deployment' -> the error is redefined as the probe/proprio-measured geometric discrepancy (demo-prior referent pose vs realized referent pose; commanded vs realized grasp point) - fully observable at deployment with no reward or oracle.\nC19-F: 'reads as an EMA bias corrector with neuroscience branding' -> the two-rate state is now one component of a mechanism with a concrete geometric semantics and a large evidenced target (-88pt init-state factor), not the headline.\nC17: 'successive LIBERO-Long subtask instances differ in object/pose so e_k from the last phase instance is not predictive' -> the ILC correction buffer lives in the REFERENT-RELATIVE frame, where systematic policy bias (e.g., grasps 1cm left of handle) is approximately instance-invariant; instance pose differences are removed by the frame transform before the update.\nC29-F: crowded replan-cadence cluster -> ProbeAnchor never gates WHEN to replan; it corrects chunk CONTENT - a different lever outside the VLA-Corrector/AAC/PACE cluster.",
+  "mechanism": "Train small probes (2-layer MLPs, ~1M params total) on frozen SmolVLA features to read out gripper state and per-object poses, supervised by the MuJoCo state labels already logged in LIBERO demos. At inference, parse the templated instruction to select the current referent object (pick target pre-grasp, place target post-grasp, switched by the observed gripper event). Compute the observable offset Delta = probe-estimated referent pose minus the demo-prior referent pose for this task (cached once from training demos), plus the exact proprioceptive offset between actual and demo-prior EE start. Apply Delta to the committed EE-delta chunk as an alpha-ramped additive correction over the approach segment (ramp 0->1, frozen after grasp for the pick referent, re-anchored to the place referent after the gripper closes). A slow two-rate buffer keyed by subtask type accumulates residual bias across repeated subtasks within an episode (ILC update c_{k+1}=c_k+L*e_k in the referent frame, e_k = probe-measured terminal miss). Nothing is retrained; the wrapper degrades to identity when Delta is below probe noise.",
+  "vla_bottleneck": "Robustness collapse on LIBERO-Plus robot init-state (~-88pt, second-worst factor) and object-layout factors, plus few-shot data efficiency: 10-25 demos give narrow spatial support that the frozen expert cannot extrapolate beyond, and retargeting extends effective coverage without new demos.",
+  "mechanistic_story": "Under init-state/layout shift the frozen expert regresses toward demo-like absolute geometry (biased toward where objects/EE were in training) - a systematic, observable, low-dimensional error, not a perception mystery: the probes (lab evidence: linear probe R^2=0.75 on frozen features) and proprioception (exact) can both read the true geometry the expert fails to respect. Adding the measured geometric residual to the chunk corrects the bias through the same channel classical visual servoing uses, while the referent-frame ILC term removes the policy's repeatable grasp/place bias over LIBERO-Long's repeated subtask structure. Because correction is confined to the referent-relative coordinate, task-irrelevant chunk content is never touched - the minimal-intervention principle enacted where C4's area chair said it must live: at execution.",
+  "dimensions_improved": [
+   "robustness (LIBERO-Plus init-state and object-layout factors; path: observable geometric bias correction)",
+   "data efficiency (few-shot 10/25-demo SR curves; path: spatial-coverage extension - the wrapper substitutes for demos that would otherwise be needed to widen support)",
+   "success rate (nominal LIBERO-Long; path: cross-repetition ILC refinement of systematic grasp/place bias, a mechanism inactive in the other two protocols)"
+  ],
+  "integration_path": "Probes: train on existing demo HDF5 sim-state labels, <2h on 1xA100. Wrapper in lerobot's select_action loop: instruction parse (templated grammar, no LLM), cached per-task demo-prior geometry, alpha-ramped chunk addition, subtask-keyed two-rate buffer (~tens of params). Total new params ~1-2M; no backbone/expert gradients; full system testable in <1 day. Generalizes to pi0/OFT-class (any EE-space chunk output).",
+  "diagnostic": "<1 GPU-day, pre-registered. (1) Probe validity: per-factor probe error on LIBERO-Plus slices; require <1cm object-pose error under init-state/layout factors (camera nominal) - KILL if not. (2) Replay: on logged failed init-state rollouts, compute the Delta that would have been applied; run 20 corrected rollouts x 3 seeds on the init-state slice; KILL if SR gain <10pt. (3) No-harm: nominal SR change >= -1pt with the below-noise identity gate. (4) ILC premise: on logged LIBERO-Long rollouts, measure whether terminal grasp/place miss in the referent frame is correlated across same-type subtasks within an episode (r>0.3 required, else drop the ILC component and keep the retarget core).",
+  "nearest_prior_art": "Classical visual servoing (needs engineered detectors and controllers, never retrofitted to a frozen VLA); object-centric/relative action frames in IL (TAX-Pose-style equivariant methods - train-time representation choices, not inference retrofits); representation steering on VLAs (2603.05487 - steers features, not actions-by-geometry); task-level ILC (Suresh & Atkeson 2602.21302 - no VLA, no frame transform); RMA-style adaptation (retrains policy to consume a latent). Delta: language-selected referent, probe-read geometry from the VLA's own frozen features, execution-time chunk retargeting with a referent-frame ILC memory, zero retraining.",
+  "novelty_risk": "Most likely scoop: an 'object-centric residual correction for frozen VLAs' paper, or a reviewer reducing it to 'visual servoing 1996'. The delta survives on the combination a servoing paper cannot claim: no engineered perception (probes on the VLA's own frozen features), language-driven referent switching, the referent-frame ILC answer to non-repetitive-ILC (C17's killer), and few-shot coverage-extension results the servoing literature never measured. Honest weakness: sim-state labels at probe-training time are sim-native; state that real-robot transfer would use any off-the-shelf pose estimator for probe supervision.",
+  "audit": {
+   "verdict": "REVISION",
+   "note": "engineered against the recorded wave-1 fatal attacks (see answers_attacks field). No dedicated novelty audit yet \u2014 judge Gate A skeptically from nearest_prior_art and novelty_risk fields; a dedicated novelty sweep runs on the final winner before any writing."
+  },
+  "gate_result": {
+   "id": "R2",
+   "A_novelty": true,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": true,
+   "all_pass": true,
+   "reasons": "Passes all six: unoccupied combination (VLA's own frozen-feature probes as perception for execution-time referent-frame retargeting + language-switched referent + referent-frame ILC) vs servoing/TAX-Pose/steering neighbors; attacks the evidenced -88pt init-state factor with a fully observable error signal (proprio component exact, probe component lab-evidenced at R^2=0.75); pure inference wrapper on any EE-chunk VLA; ~1-2M params, <1 day; pre-registered kill thresholds for every link including the ILC premise."
+  },
+  "gate_pass_count": 6,
+  "debate_record": [
+   {
+    "id": "R2",
+    "round": "R1-supporter-vs-critic",
+    "killed": false,
+    "attack_summary": "The load-bearing premise \u2014 that init-state/layout collapse is a low-dimensional, systematic \"right-shape, wrong-offset\" bias \u2014 is unverified, and the -88pt magnitude plus closed-loop visual replanning argue the frozen expert partially adapts or degenerates outright: if it partially adapts, adding the FULL Delta every chunk double-counts and overshoots (no term estimates how much the policy already compensated); if it degenerates under OOD proprio, additive retargeting cannot repair garbage trajectories. Secondarily, the mechanism is a bundle of benchmark-specific heuristics (templated-grammar parsing, hand-tuned alpha-ramp, gripper-event switching, sim-privileged probe labels) that a reviewer reduces to \"visual servoing 1996 with a learned pose head bolted beside \u2014 not inside \u2014 the VLA,\" and the ILC third dimension is likely inert since same-type subtasks rarely repeat within one LIBERO-Long episode.",
+    "verdict_reasoning": "The critic's strongest attack (premise falsity / overshoot) is precisely what R2's pre-registered diagnostics adjudicate for near-zero cost \u2014 a $0 replay analysis on existing failure logs plus <1 GPU-day of corrected rollouts with explicit kill thresholds (<10pt gain, <1cm probe error, no-harm gate) \u2014 so killing now pre-empts a decisive cheap test rather than saving a GPU-month; and the causal story (EE-delta chunks executed from a shifted start miss by the start offset) is mechanistically concrete and supported by the lab's own R^2=0.75 probe evidence on a verified -88pt bottleneck. The novelty margin is thin but the claimed combination (probes on the VLA's own frozen features, language-selected referent switching, referent-frame ILC, zero retraining) is absent from every named neighbor, the ILC component has its own pre-registered drop condition so the core survives without it, and frozen-backbone compliance is by construction. Critic wounds but does not clearly dominate: R2 survives to its diagnostic gate."
+   },
+   {
+    "id": "R2",
+    "round": "R2-reviewer2",
+    "killed": true,
+    "attack_summary": "The correction signal Delta = (probe pose \u2212 demo-prior pose) is not the policy's error: SmolVLA is a closed-loop policy trained under LIBERO's own per-episode object-pose randomization, so the \"demo-prior referent pose cached once\" is a distribution, not a point \u2014 in nominal conditions Delta is large and nonzero for a policy that is already handling that variation, and the wrapper actively fights it (the below-probe-noise identity gate cannot save this, since in-distribution pose spread far exceeds probe noise). Under shift the policy partially perceives the true pose (the cited R\u00b2=0.75 probe is the proposal's own evidence), so adding the full offset double-counts whatever the expert already corrected, and the mechanism has no estimator for how much the policy accounted for \u2014 the same unobservable-error flaw that killed C19, now hidden inside geometry. Worse, on the headline \u221288pt robot-init-state factor the objects don't move, so the referent term is identically zero and the mechanism degenerates to an EE-start-offset ramp whose stated 0\u21921 schedule displaces the grasp endpoint away from the unmoved object. Novelty then reduces to trajectory transfer via pose registration (Schulman et al. 2013) / DINOBot-DOME-style servo-to-demo-frame retrofits, with \"language-selected referent\" being a regex over a closed template grammar and the \"VLA's-own-features\" probe an implementation detail the authors themselves concede is swappable for an off-the-shelf pose estimator.",
+    "verdict_reasoning": "The mechanism is internally incoherent on the exact factor it is scoped to fix (init-state: zero referent Delta, wrong-signed start-offset ramp) and ill-posed everywhere else (double-counting against a partially-perceiving closed-loop expert), so even a passing 20-rollout diagnostic would reflect slice-tuned ramp constants, not the claimed causal story. The evaluation is additionally unfair as designed: probes consume privileged MuJoCo state supervision the baseline never sees, and the mandatory cheap comparator \u2014 a tiny learned residual head trained on the same labels, which subsumes the hand-derived geometry \u2014 is absent from the plan. With the premise (policy regresses to demo-absolute geometry) unvalidated and the novelty delta reducible to a servoing/trajectory-transfer retrofit, this does not merit a GPU-month."
+   },
+   {
+    "id": "R2",
+    "round": "R3-area-chair",
+    "killed": true,
+    "attack_summary": "R2's three claimed dimensions collapse under inspection to roughly one: \"data efficiency\" is the identical geometric-bias-correction path re-plotted against demo count (the exact one-measurement-counted-three-times attack R1 answered and R2 did not), and the ILC third dimension is structurally inert on LIBERO-Long \u2014 episodes contain only 1-2 same-type subtask repetitions, so a per-episode buffer cannot converge while a cross-episode buffer contaminates the eval protocol by adapting on test episodes, and the proposal itself pre-authorizes dropping it (\"else drop the ILC component\"). Worse, the novelty delta and the transfer story are mutually exclusive: the only stated separation from 1996 visual servoing is \"probes on the VLA's own frozen features,\" but those probes are supervised by MuJoCo sim-state labels of the same benchmark, and the admitted real-robot path (swap in an off-the-shelf pose estimator) surrenders precisely that delta, reducing the paper to a pose-estimator servoing residual bolted onto a policy. Best case is therefore a benchmark-specific fix for 2 of ~7 LIBERO-Plus factors built on LIBERO-only scaffolding (templated instruction grammar, per-task demo-prior pose lookup that isn't even a well-defined point under nominal randomization).",
+    "verdict_reasoning": "Even granting correctness, the mechanism is an alpha-ramped P-controller toward a probe-read goal pose \u2014 its most interesting kernel (\"frozen features decode geometry the policy fails to act on\") is an analysis observation partially occupied by existing VLA probing work, and the obvious fair baselines (re-anchoring EE-delta chunks to actual proprio start, which the model already receives; finetuning only the ~100M action expert on init-randomized demos, which frozen-BACKBONE rules permit) plausibly eat most of the headline gain, leaving an eval-artifact story rather than a mechanism. One real dimension on two sim factors with sim-supervised probes is a workshop paper or RA-L short, not the >=3-dimension Q1 contribution the batch requires; with R1 covering appearance factors more broadly and R4 carrying a publishable taxonomy deliverable, R2 is the borderline-significance submission this gate exists to kill."
+   }
+  ],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "S1",
+  "name": "Metadata-Disentangled Nuisance-Subspace Repair (upstream, projection-not-invariance)",
+  "based_on": [
+   "C21",
+   "C13",
+   "C7"
+  ],
+  "answers_attacks": {
+   "C21_dimensions_and_snap": "Attack (C21 gate E): 'novel-object generalization is plausibly HURT by snap-to-training-prototype ... prototype quantization risks degrading [nominal SR] ... adds params/latency/compute' -> only 1-2 axes. STRUCTURAL FIX: never snap the whole embedding. Learn (on CLEAN training data, using the simulator's free rendering metadata) a split of each frozen token into a low-rank NUISANCE subspace (the directions that predict camera-pose / light params) and its complement CONTENT subspace (predicts object/task identity). Attractor/nearest-clean projection is applied ONLY inside the nuisance subspace; the content subspace passes through untouched. Novel objects live in content -> never snapped -> generalization is preserved BY CONSTRUCTION and becomes a positive axis instead of a casualty.",
+   "C7_augmentation_baseline": "Attack (C7 R3): 'trivial baselines (corruption-augmented head training, camera dropout, a 2-way softmax gate) plausibly capture most of the gain'. STRUCTURAL FIX: the module is trained by DISENTANGLEMENT on clean frames using privileged sim metadata (camera/light labels), NOT by perturbation augmentation, and the repair is a projection onto the clean nuisance MARGINAL that is independent of which perturbation displaced the point -> it transfers to perturbation factors never seen in training. The augmentation baseline learns a fixed invariant map only over trained factors. The pre-registered win is on HELD-OUT factors, which the augmentation baseline cannot cover by construction.",
+   "C7_n2_degeneracy": "Attack (C7 R1/R2): 'Dempster-Shafer combination of exactly 2 sources degenerates to normalized product weighting -- a learned scalar camera gate'. STRUCTURAL FIX: there is no cross-camera fusion here. Each camera's own nuisance subspace is repaired toward its own clean marginal independently, so no borrowed n=2 evidential formalism, no scalar-gate degeneracy, and the wrist-cam signal is never discarded."
+  },
+  "mechanism": "Small adapter (~2-5M params) between the frozen vision tower and the frozen connector. Offline on clean training rollouts: (a) fit a low-rank projector P_nuis whose subspace linearly predicts the sim's rendering metadata (camera pose bin, light color/intensity) and P_cont as its complement predicting object/task identity; (b) store the empirical clean marginal of nuisance codes (a few thousand cluster centroids, non-parametric). At inference, decompose z = z_cont + z_nuis; replace z_nuis by its nearest clean centroid (one dense-associative / kNN step), gated by nuisance-space off-manifold distance so in-distribution inputs get ~identity; recombine and forward. Backbone frozen, zero backbone gradients, one small forward add per step.",
+  "vla_bottleneck": "LIBERO-Plus robustness collapse on the worst photometric/viewpoint-appearance factors, WITHOUT the standard failure of also destroying novel-object generalization.",
+  "mechanistic_story": "Perception-driven OOD cannot be repaired downstream of a frozen backbone (every monitor/gate in the batch died because its own inputs are corrupted). The only sound intervention is upstream: repair the perceptual signal before it propagates. But a blunt attractor also corrupts genuinely-new content. Splitting nuisance (rendering appearance, task-irrelevant) from content (object/geometry, task-relevant) via privileged sim metadata lets us repair the first and protect the second -- projecting the nuisance factor onto its clean manifold cleans lighting/appearance drift regardless of the specific perturbation, so it generalizes to unseen appearance factors, while leaving content free preserves compositional generalization.",
+  "dimensions_improved": [
+   "Robustness to HELD-OUT LIBERO-Plus appearance factors (train repair on {lighting,distractor}, test on {viewpoint-appearance,occlusion}) -- causal path: perturbation-independent manifold projection; this is the by-construction differentiator vs augmentation.",
+   "Data efficiency on the 10/25/50-demo few-shot protocol -- causal path: the disentangled CONTENT code is a lower-nuisance conditioning, so the few-shot adapter has less to fit (distinct benchmark, distinct from perturbation-robustness).",
+   "Novel-object / compositional generalization (LIBERO-Plus object-swap under nominal appearance) -- causal path: content subspace untouched, so snap-to-prototype cannot degrade it (distinct measurement, non-regression turned positive)."
+  ],
+  "integration_path": "Adapter at the vision-tower / connector boundary shared by SmolVLA/pi0/OFT-class multi-cam VLAs; sim metadata (camera/light/object id) is already logged by LIBERO/robosuite so no new data. Trains in hours on 1xA100 from cached clean features; inference-only projection thereafter. No action-expert retrain per condition (the projector is fit once on clean data), so it is a genuine plug-in, not a per-condition recipe.",
+  "diagnostic": "<1 GPU-day, pre-registered, premise-killing. (i) On ~200 clean-vs-lighting-shifted frame pairs, verify P_nuis captures the shift: projecting z_nuis to the clean marginal must move the FULL feature measurably closer (kNN distance) to clean training features AND lower the frozen expert's action-prediction error; if not, dead. (ii) By-construction check IS the success criterion: train repair and a corruption-augmented-adapter baseline on {lighting,distractor}; evaluate BOTH on held-out {viewpoint-appearance,occlusion}. Repair must beat the augmentation baseline on held-out factors (>=3 seeds, mean +/- std). If augmentation matches it, the mechanism has no by-construction edge -> kill before any full policy run.",
+  "nearest_prior_art": "C21 attractor repair (but global, no factorization -> snaps novel content); DRIBO/VDB multi-view IB (learn an invariant map == the augmentation baseline; delta = explicit nuisance-subspace PROJECTION defined by sim metadata + held-out-factor transfer claim, not a learned invariance); test-time feature alignment / test-time training (delta = frozen weights, no entropy/param adaptation, and the metadata-supervised nuisance/content split).",
+  "novelty_risk": "MODERATE. Disentanglement literature is large; the defensible delta is (a) projection-onto-clean-marginal (not learned invariance) and (b) the held-out-factor pre-registration that separates it from augmentation. Main reviewer surface: 'is nuisance really linearly separable, and does projecting it undo enough of a nonlinear viewpoint change?' -- the diagnostic is built to answer exactly this cheaply. Second-order risk: using the module twice (repair + few-shot conditioning) can read as two tricks; defended by the single shared decomposition (one disentanglement thesis).",
+  "audit": {
+   "verdict": "REVISION",
+   "note": "second-surgeon batch engineered against recorded fatal attacks (answers_attacks field). No dedicated novelty audit \u2014 judge Gate A skeptically from nearest_prior_art/novelty_risk; winner gets a dedicated novelty sweep before writing."
+  },
+  "gate_result": {
+   "id": "S1",
+   "A_novelty": true,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": true,
+   "all_pass": true,
+   "reasons": "Passes all six: metadata-supervised nuisance-subspace projection-to-clean-marginal (content untouched) has a defensible delta over attractor repair, learned invariance, concept-erasure, and prototype-snap TTA; privileged metadata is training-time only; held-out-factor pre-registration and the premise-killing diagnostic make it falsifiable and PC-defensible. Condition: the promised dedicated novelty sweep must run before writing."
+  },
+  "gate_pass_count": 6,
+  "debate_record": [
+   {
+    "id": "S1",
+    "round": "R1-supporter-vs-critic",
+    "killed": true,
+    "attack_summary": "The nuisance subspace is unidentifiable as specified: clean LIBERO data has constant camera pose and lighting, so the \"linearly predicts rendering metadata\" regression has a near-constant target (and the only varying metadata, wrist-cam pose, is task content, poisoning the split). Any rescue requires factor-varied re-rendering, which collapses the core \"disentanglement-not-augmentation\" differentiator \u2014 and the proposal's own diagnostic (ii) already trains the repair on {lighting, distractor} perturbations, contradicting its C7 defense. Worse, the pre-registered held-out win is staked on occlusion and viewpoint-appearance, factors a low-rank linear appearance-subspace projection mechanistically cannot repair (occlusion deletes content tokens; viewpoint shuffles token correspondence). Residual novelty is thin: metadata-supervised linear nuisance projection is INLP/LEACE-style concept erasure plus a snap-to-marginal, unacknowledged in nearest_prior_art.",
+    "verdict_reasoning": "S1's survival case rested entirely on by-construction differentiators (clean-data-only training, held-out-factor transfer, protected content subspace), and each dissolves under inspection: the training premise is incoherent as written, the held-out factors sit outside the mechanism's reach, and the \"content preserved\" axis is vacuous against anything but the C21 strawman. What remains is a linear-projection variant of appearance augmentation whose cheap diagnostic can pass on weak proxies (lighting-only kNN distance) while the headline claim fails \u2014 a textbook false-survivor risk, so the kill is warranted despite the low diagnostic cost."
+   },
+   {
+    "id": "S1",
+    "round": "R2-reviewer2",
+    "killed": true,
+    "attack_summary": "Identifiability contradiction at the core: supervised nuisance disentanglement requires variation in the supervised labels, but clean LIBERO rollouts have essentially constant camera pose and lighting per task, so \"camera-pose bin / light params\" probes fit on clean-only data are degenerate \u2014 P_nuis is unlearnable without re-rendering varied lighting/cameras, and the moment you re-render variants you are doing perturbation augmentation with extra steps, collapsing the claimed \"structural, by-construction\" edge over the corruption-augmented baseline (both now see the same factor variation) and grazing the killed sim-re-render direction. Second front: the pre-registered held-out-factor win has no causal path \u2014 occlusion and viewpoint displace features largely OUTSIDE a lighting/distractor-fit nuisance subspace, so the off-manifold gate either never fires (repair does nothing) or snaps to an irrelevant clean centroid; meanwhile viewpoint entangles with content (object positions are task-relevant), and \"distractor as nuisance\" directly contradicts the \"novel objects live in content, preserved BY CONSTRUCTION\" guarantee, which anyway only holds under exact factor orthogonality that the concept-erasure literature (INLP/LEACE) shows real features never satisfy. Novelty: the mechanism is linear-probe concept erasure plus clean-statistics matching plus test-time feature restoration \u2014 the nearest_prior_art field omits INLP/LEACE and style-statistic/feature-restoration lines that are closer than the DRIBO/TTT strawmen it cites.",
+    "verdict_reasoning": "The proposal is internally inconsistent: it simultaneously claims clean-data-only training (its whole differentiator vs augmentation), a nuisance subspace supervised by camera-pose labels, and an eval that holds out viewpoint \u2014 these cannot all be true, and every resolution either destroys the differentiator or leaves the headline factors (viewpoint -91pt, occlusion) outside the repairable subspace. Its own diagnostic would not catch this because diagnostic (i) tests only lighting, the one factor where the linear-offset story plausibly works, so a passing diagnostic still funnels a GPU-month into an eval with no mechanism for its pre-registered win. With the by-construction claims falsified in principle and the residual mechanism reducible to known concept-erasure plus manifold-snapping, the surviving contribution is too thin for CoRL/TMLR."
+   },
+   {
+    "id": "S1",
+    "round": "R3-area-chair",
+    "killed": true,
+    "attack_summary": "Of the three claimed dimensions, only one survives inspection: (a) the few-shot axis has an empty causal path \u2014 LIBERO demos are rendered under fixed camera/lighting, so there is near-zero nuisance variance for the content code to remove, and (b) the novel-object axis is a non-regression (the gate is ~identity in-distribution, so it merely matches the frozen baseline, beating only the internal C21 strawman). The remaining axis \u2014 held-out-factor robustness \u2014 targets the mildest LIBERO-Plus slice (photometrics), not the -91pt viewpoint or -88pt init-state collapses, and its transfer claim is mechanistically implausible: occlusion introduces content-like structure and viewpoint is a high-rank geometric warp, neither of which lands in a low-rank subspace fit to lighting/camera-bin labels. Worse, the flagship \"by construction\" content protection is false \u2014 observed color = reflectance x illumination, so any linear subspace that predicts light parameters necessarily carries object-color directions, and snapping it to the clean marginal can recolor novel objects, reproducing exactly the C21 failure the fix claims to structurally eliminate.",
+    "verdict_reasoning": "S1 realistically moves ~1 of the >=3 required dimensions, and that one is a small photometric slice of LIBERO-Plus using privileged sim rendering metadata with no real-robot story \u2014 workshop/short-RA-L scope, not CoRL/T-RO main track. Its anti-augmentation positioning is also internally inconsistent (the diagnostic itself trains on {lighting,distractor} perturbed renders, since clean data has constant metadata and cannot define the subspace), and the projection-out-nuisance mechanism sits close to known linear concept erasure (INLP/LEACE-style), leaving a thin delta that hangs entirely on an improbable held-out-factor transfer result. A borderline-significance idea with a falsified by-construction guarantee does not justify the downstream GPU-month; kill."
+   }
+  ],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "R1",
+  "name": "First-Glance Nuisance Recalibration (FGNR): episode-level feature-manifold repair",
+  "based_on": [
+   "C21",
+   "C19",
+   "C13",
+   "C7 (bottleneck + attack record)",
+   "C15 (monitor side-signal)"
+  ],
+  "answers_attacks": "C7-R1: 'down-weighting it discards signal rather than recovering it' -> repair, not reweight: the corrupted stream is re-projected toward the training feature manifold; no information is discarded and no view is gated.\nC7-R1: 'that same generator applied as plain augmentation to the action expert is the mandatory fair baseline that uses a strict superset of the gate's training signal' -> the pipeline contains no corruption generator: the nuisance basis and energy model are fit on CLEAN training features only, and adaptation happens to the realized test-time shift, which no fixed augmentation range can pre-empt (pre-registered prediction: FGNR's margin over augmentation-finetune grows with shift magnitude beyond the augmentation range).\nC7-R3: 'with N=2 cameras the Dempster-Shafer/Dirichlet machinery reduces to a learned scalar blend' -> no fusion apparatus at all; the object is a per-episode K-dim coefficient vector, well-posed for any camera count.\nC21-gateE: 'novel-object generalization is plausibly HURT by snap-to-training-prototype' -> correction is confined by construction to an offline-identified low-rank nuisance subspace (content directions untouched), gated by an energy-improvement margin with identity fallback; a probe-invariance purity check verifies basis directions do not move state readouts.\nC7-R3: 'three claimed dimensions ... are one measurement counted three times' -> three protocols with three causal paths: LIBERO-Plus appearance robustness (manifold repair), zero-demo adaptation cost vs demo-based finetuning (unsupervised inference), marginal-FLOP comparison vs per-step TTA/BoN (one-shot amortization).\nC15/C24/C2: 'the causal chain breaks at detection-to-recovery' -> the estimator IS the recovery; residual energy after recalibration is only a bonus monitoring signal, never the contribution.",
+  "mechanism": "Exploit the structural fact that LIBERO-Plus appearance perturbations (camera pose, lighting, background, distractors) are episode-constant: infer the episode's nuisance once, then correct every frame nearly for free. Offline, on cached clean frozen-connector features, build (a) a low-rank nuisance basis B (K<=32 directions) from between-episode variation with task/instruction-conditioned centering, purity-checked so moving along B leaves state-probe readouts invariant, and (b) a cheap energy model of the clean feature manifold (GMM or small modern-Hopfield head, 1-3M params, trained on clean data only). At deployment, the first ~10 frames fit coefficients c by minimizing energy(f - B.c) over c only (closed-form for quadratic energy; no weight gradients), then the fixed transform f -> f - B.c is applied to connector tokens for the rest of the episode, with a slow EMA refinement (two-rate structure from C19, now driven by an observable signal). A no-harm gate applies the correction only when energy improves by a margin, else identity. Backbone, connector, and action expert are untouched; the expert simply receives conditioning pulled back onto the manifold it was trained on.",
+  "vla_bottleneck": "Perception-driven robustness collapse on LIBERO-Plus appearance factors (camera viewpoint is the single worst factor, ~-91pt). Explicitly NOT claimed for robot init-state (there the correct action genuinely changes; that is R2's job) - this scoping is itself an answer to the C33 kill ('under init-state shift the correct action SHOULD change').",
+  "mechanistic_story": "The lab's own probe result (R^2=0.75) says frozen features carry the needed state information; LIBERO-Plus collapse therefore happens because an appearance shift displaces features off the training manifold and the frozen expert extrapolates. If the displacement is approximately low-rank and episode-constant (both falsifiable), removing its component along a clean-data-derived nuisance basis restores in-distribution conditioning through the exact causal channel the failure uses. Every link is measurable: displacement rank, probe-R^2 recovery after correction, rollout SR recovery.",
+  "dimensions_improved": [
+   "robustness (LIBERO-Plus appearance factors; path: input-manifold repair of the expert's conditioning)",
+   "data efficiency (zero-demo, reward-free adaptation to a shifted deployment condition, vs LoRA/TT-RL baselines that need demos or reward in the new condition; path: unsupervised episode-level inference)",
+   "compute (robustness at ~zero marginal inference FLOPs after 10 frames, vs per-step gradient TTA or KxN BoN verifiers at matched robustness; path: one-shot amortization of the estimate)"
+  ],
+  "integration_path": "Single interception point at the connector output tensor in lerobot's modeling_smolvla.py (same interface exists in pi0/OFT-class). Offline: PCA-style basis over cached episode-mean features (already-cached features, few GPU-hours) + energy head (1-3M params, hours on 1xA100). Online: closed-form coefficient fit on ~10 frames, then a per-token subtract. Total new params <3M, no backbone or expert gradients, ~2-3 days end-to-end on 1xA100.",
+  "diagnostic": "<1 GPU-day, pre-registered. (1) Cache frozen connector features for viewpoint/lighting/background LIBERO-Plus episodes; fit c per episode; KILL if linear-probe action-R^2 on corrected features recovers <40% of the clean-vs-perturbed gap on the viewpoint factor. (2) 20-episode corrected-feature rollout slice x 3 seeds on viewpoint factor; KILL if SR gain <10pt. (3) No-harm: nominal LIBERO SR drop must be <=1pt with the energy gate on. (4) Basis purity: moving along B must change state-probe outputs <5% of their perturbation-induced range, else the basis is content-contaminated and the design is unsafe.",
+  "nearest_prior_art": "Classification TTA via feature/statistic alignment (TENT, DUA, T3A - BN/entropy, per-step, weight updates); RMA (Kumar et al.) episode-latent adaptation (needs privileged training and a policy trained to consume the latent - a full retrain, not a plug-in); VLA TTA (TT-RL 2601.06748 gradient RL, Retrieve-then-Steer 2605.10094 memory-based); BYOVLA-style runtime observation intervention (pixel-space inpainting, VLM-driven); C21's per-frame Hopfield prototype snap. Delta: gradient-free amortized EPISODE-level inference of a low-rank nuisance transform in frozen-feature space, trained on clean data only, zero policy modification, closed-loop manipulation setting.",
+  "novelty_risk": "Most likely scoop: a 'test-time feature alignment for VLA robustness' paper. Delta survives because the episode-constant amortization (10 frames, then free), clean-data-only training (no augmentation confound by construction), and the no-retrain plug-in property are jointly absent from every named neighbor; TTA-crowding is answered by having no gradient steps, no reward, no memory bank, and no per-step cost. Residual risk: if the nuisance displacement is high-rank/content-entangled the premise dies - which is exactly what diagnostic (1) kills for $0.5 GPU-day.",
+  "audit": {
+   "verdict": "REVISION",
+   "note": "engineered against the recorded wave-1 fatal attacks (see answers_attacks field). No dedicated novelty audit yet \u2014 judge Gate A skeptically from nearest_prior_art and novelty_risk fields; a dedicated novelty sweep runs on the final winner before any writing."
+  },
+  "gate_result": {
+   "id": "R1",
+   "A_novelty": true,
+   "B_importance": true,
+   "C_mechanism": false,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": true,
+   "all_pass": false,
+   "reasons": "C: causal chain has a load-bearing span gap \u2014 the nuisance basis B is fit on clean LIBERO features that contain zero viewpoint/lighting/background variation (fixed camera/scene in training), and after task-conditioned centering plus the purity check the surviving directions are content-stripped residue; there is no stated reason the unseen test-time perturbation displacement should lie in span(B), so the correction defaults to identity exactly on the -91pt factor it targets. The refusal of a corruption generator (its answer to the augmentation-baseline attack) is what creates this gap, and the proposal never closes it \u2014 the diagnostic can falsify it but the story is not affirmatively sound now."
+  },
+  "gate_pass_count": 5,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "R3",
+  "name": "Consensus-Split Decoding (CSD): direction-wise aggregation of K seed-samples",
+  "based_on": [
+   "C11",
+   "C22",
+   "C26 (premise)",
+   "C43 (anytime-compute angle)"
+  ],
+  "answers_attacks": "C11: 'averaging K samples from a multimodal flow sampler mode-averages into off-manifold trajectories - the exact failure generative action heads exist to avoid' -> CSD never averages across modes: cross-seed covariance splits chunk dimensions into a consensus subspace (low variance -> average, pure noise reduction) and disagreement directions (high variance/bimodal -> select the single sample value closest to the committed previous-chunk tail; no mean is ever taken there).\nC22: 'Krum's breakdown-point guarantee assumes a corrupted minority of independent inputs, but all K samples share the same corrupted conditioning' -> no Byzantine/corruption claim is made; the aggregated noise source is the sampler's own seed noise, which IS independent across draws by construction - the one regime where the independence assumption actually holds.\nC22-E: 'latency worsens with K passes' -> the K expert passes batch on one GPU under a single cached backbone forward (expert ~100M, backbone dominates), and aggregation substitutes for integration depth: the headline compute claim is K x NFE=2 samples matching or beating 1 x NFE=10 - a measured tradeoff, not a hope.\nC26-F: 'the long-horizon link (per-chunk sampling noise drives the 23-46pt gap) is itself unproven' -> the premise is the FIRST thing tested, with a pre-registered seed-variance kill test that costs ~2 GPU-hours and no engineering.",
+  "mechanism": "At each replanning step, draw K=8 action-chunk samples from SmolVLA's flow expert under one cached backbone forward, varying only the sampler seed (batched, near-wall-clock-flat). Compute cross-seed statistics per chunk dimension (optionally in a PCA basis of the K samples). Dimensions with low cross-seed variance are consensus: output their mean, reducing seed-noise variance by ~1/K. Directions with high variance or bimodality are disagreement: output the value from the single sample whose overlap window is closest to the committed previous chunk's tail (temporal-coherence anchor), preserving mode integrity. The composed chunk is dispatched; zero trained parameters, zero policy modification. A second operating point runs each sample at NFE=2 instead of 10, testing aggregation as a substitute for integration depth (anytime-compute knob without C43's retraining or overclaimed theorem).",
+  "vla_bottleneck": "Long-horizon compounding of per-chunk sampling noise on LIBERO-Long (baseline 49.0% reproduced; ~8-13 chunks per episode means per-chunk stochasticity compounds), plus execution smoothness in contact phases. Explicitly NOT sold as a fix for perception-driven LIBERO-Plus collapse (that mismatch killed C22/C11).",
+  "mechanistic_story": "A single sampled trajectory can be a low-probability tail draw; over 8-13 chunks the probability that no chunk draws a bad tail decays geometrically, which is a candidate mechanism for the long-horizon gap. Seed noise is the one error source in the pipeline that is provably independent across draws, so variance reduction by consensus averaging is statistically licensed exactly there - and mode selection anchored to the committed tail resolves genuine multimodality without the off-manifold mean that killed C11. If the seed-variance diagnostic shows rollout outcomes are insensitive to sampler seed, the mechanism has no target and dies for 2 GPU-hours.",
+  "dimensions_improved": [
+   "success rate (LIBERO-Long; path: geometric suppression of compounding seed-noise across chunks)",
+   "robustness (contact-phase and mild-perturbation slices where multimodality spikes; path: mode-consistent selection replacing tail draws - a selection effect, distinct from the variance-averaging path)",
+   "compute/latency (K x NFE=2 vs 1 x NFE=10 at matched quality; path: aggregation substituting for ODE integration depth)"
+  ],
+  "integration_path": "Sampler wrapper in lerobot modeling_smolvla.py: batch K seeds through the flow expert (conditioning computed once), per-dimension stats, compose, dispatch. Zero trainable params, no retraining, ~1 day of engineering; attaches to any stochastic-sampler VLA (pi0-class); does not attach to deterministic OFT heads (stated scope limit, as gate D requires an affirmative path: flow/diffusion VLAs are the dominant class).",
+  "diagnostic": "~2 GPU-hours, pre-registered, run BEFORE any build. (1) Seed-variance test: 20 LIBERO-Long episodes x 8 sampler seeds, all else fixed; KILL if between-seed SR std <3pt AND per-chunk cross-seed dispersion has point-biserial |r|<0.2 with episode failure. (2) Multimodality census: fraction of chunk dimensions with cross-seed bimodality; if <5%, the direction-split degenerates to plain averaging - KILL to the plain-mean baseline (kill-pattern d, checked explicitly). (3) Mandatory baselines named up front: single sample, mean-of-K, ACT temporal ensembling, best-of-N with tail-distance scoring - CSD must beat all four at matched expert FLOPs or it is reported as a negative result.",
+  "nearest_prior_art": "ACT temporal ensembling (temporally staggered chunks, fixed decay weights); VOTE 2507.05116 (cosine committee voting); LiPo (post-hoc smoothing); MPPI-style soft blending (C11's parent, mode-averages); BoN/verifier cluster (RoboMonkey, VGAS - need a trained scorer). Delta: scorer-free, direction-wise decomposition by cross-seed covariance with mode-consistent anchoring, explicitly targeting the independent-by-construction noise source rather than model error.",
+  "novelty_risk": "Highest-risk proposal of the four (crowded test-time-scaling neighborhood; a BoN-cluster paper could add per-dimension weighting any month). It is included because its kill test is the cheapest in the portfolio and its premise (seed-noise sensitivity of long-horizon SR) is independently valuable lab knowledge even on a KILL: the diagnostic doubles as the first controlled decomposition of the 49% baseline's stochasticity. Only proceeds to a paper claim if the premise effect is large and all four named baselines are beaten.",
+  "audit": {
+   "verdict": "REVISION",
+   "note": "engineered against the recorded wave-1 fatal attacks (see answers_attacks field). No dedicated novelty audit yet \u2014 judge Gate A skeptically from nearest_prior_art and novelty_risk fields; a dedicated novelty sweep runs on the final winner before any writing."
+  },
+  "gate_result": {
+   "id": "R3",
+   "A_novelty": false,
+   "B_importance": false,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": false,
+   "all_pass": false,
+   "reasons": "A: per-dimension variance-split aggregation is an incremental delta inside the crowded ACT-ensembling/VOTE/LiPo/BoN cluster \u2014 the proposal itself rates it scoopable any month. B: the evidenced bottleneck is the 23-46pt long-horizon gap, but the attacked channel (sampler seed noise) is unevidenced and implausible as the driver of a gap that size; the premise is admittedly untested, so the importance case is not affirmatively strong. F: a program committee would read a scorer-free sample-aggregation wrapper as a test-time-scaling trick, not a contribution, in this neighborhood."
+  },
+  "gate_pass_count": 3,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "R4",
+  "name": "Declarative Postcondition Retry (DPR): probe-verified subgoal outcomes with scripted re-attempt",
+  "based_on": [
+   "C15",
+   "C24",
+   "C40",
+   "C46",
+   "C2 (monitor-cluster kills)",
+   "C17 (subtask indexing)"
+  ],
+  "answers_attacks": "C15: 'the causal chain breaks at detection-to-recovery - there is no concrete story for how a detector firing improves SR' -> recovery is specified and quantified before launch: retreat-and-reattempt exploits the closed-loop policy's own demonstrated competence; if per-grasp success is p, one verified retry lifts it toward p(2-p), and the expected episode-level gain is computable in advance from the failure taxonomy.\nC40: 'the GNN that predicts post-chunk object-relation graphs ... is an action-conditioned symbolic transition model - directly adjacent to the hard world-model exclusion' -> nothing is predicted: postconditions are DECLARATIVE task knowledge (pick X -> X-in-gripper; place X on Y -> X-on-Y), parsed once from the templated instruction and checked against probe readouts AFTER execution; there is no transition model of any kind.\nC46-F: 'the contribution reduces to two tuned hyperparameters on top of a SeqVLA-recipe completion head' -> DPR is not a transition debouncer: it verifies predicate-level physical outcomes with independent probes and issues a physical recovery primitive; its deliverables include the failure-taxonomy measurement (what fraction of long-horizon failures are silent postcondition violations) and the retry-arithmetic validation - a causal account, not a gating trick.\nC24: 'a flagged OOD state re-queries the same misperceiving frozen backbone more often, with no mechanism for the extra queries to yield better actions' -> the retry changes the PHYSICAL state (retreat to a demo-like approach pose, reopen gripper), so the re-attempt is a fresh draw from a state distribution the policy handles well - the extra queries yield better actions because the world, not the query, changed.",
+  "mechanism": "Reuse R2's probes (object poses, object-in-gripper, ~1M params, trained on sim-state labels already in the demos) as postcondition verifiers. Parse each templated LIBERO instruction once into a short list of declarative subgoal postconditions. At each chunk boundary, check the pending postcondition against probe readouts; the check costs one MLP pass on features already computed. If a grasp/place postcondition is FALSE while the policy's behavior implies it believes otherwise (gripper closed and lifting with no object-in-gripper, or moving on with the object off-target), trigger a scripted micro-recovery - retreat 5cm up, open gripper, back off 3cm - returning the scene to a demo-like approach state, then release control back to the frozen policy for a natural re-attempt (budget: 2 retries per subgoal). No learned recovery policy, no completion-gating of transitions, no replan-cadence change, no VLM critic; the frozen policy's own closed-loop competence does the recovery.",
+  "vla_bottleneck": "Long-horizon collapse on LIBERO-Long (49.0% reproduced): if a meaningful fraction of failures are silent postcondition violations (failed grasp, misplaced object) after which execution blindly continues, each is a compounding-chain break that one verified retry can repair.",
+  "mechanistic_story": "Long-horizon SR is roughly the product of per-subgoal success rates; a single silent grasp failure kills the whole episode. The frozen policy demonstrably succeeds at each subgoal type most of the time (49% over 8-13-chunk episodes implies high per-subgoal p), so a second independent attempt from a demo-like approach state recovers most single-subgoal failures: per-subgoal p -> ~p(2-p), compounding into a large episode-level gain (e.g., p=0.92 over 8 subgoals: 51% -> 95% ceiling if retries were free and i.i.d.; realized gain measured against that pre-registered ceiling). The mechanism attacks the multiplicative structure of long-horizon failure directly, at the layer where it lives.",
+  "dimensions_improved": [
+   "success rate (LIBERO-Long; path: retry arithmetic breaking the multiplicative failure chain)",
+   "data efficiency (few-shot 10/25-demo curves; path: retry gain p(1-p) is maximal at mid p, so low-demo policies with lower per-attempt success are amplified MOST - a quantified, distinct amplification path)",
+   "robustness (LIBERO-Plus slices where failures are transient/stochastic rather than systematic; path: recovery from single-attempt stochasticity, disjoint from R1/R2's bias-correction paths)"
+  ],
+  "integration_path": "Shares R2's probe infrastructure (train once, <2h). Postcondition table from the templated instruction grammar (no LLM, no BDDL dependency at eval - BDDL used only as an upper-bound oracle ablation). Chunk-boundary check + scripted retreat primitive in the lerobot rollout loop; ~zero new params beyond shared probes; <1 day to working system on 1xA100.",
+  "diagnostic": "Nearly free, pre-registered. (1) Log analysis on the EXISTING 100-rollout 49.0% baseline logs (0 GPU): label each failure; KILL if <25% of failures are silent postcondition violations with >=1 chunk of blind continuation. (2) Retry-independence pilot (<0.5 GPU-day): 20 episodes with scripted retreat after detected grasp failure; KILL if second-attempt per-grasp success <60% of first-attempt rate (tests the near-i.i.d. retry assumption). (3) False-positive budget: probe-verifier false-alarm rate on successful subgoals must be <3% or the retry loop costs more than it recovers.",
+  "nearest_prior_art": "Recover (2404.00756, neuro-symbolic TAMP replanning); scene-graph proactive replanning (2508.11286, LLM-planner scale); SeqVLA/StreamVLA/See-Plan-Rewind (completion-GATING of transitions, no physical recovery); RoboFAC/AHA-class VLM failure critics (billion-param VLM in the loop); classic retry heuristics in systems like OK-Robot. Delta: declarative (non-predictive) postconditions checked by ~1M-param probes at zero marginal backbone cost, plus a minimal scripted physical recovery that reuses the frozen policy for the re-attempt, inside a sub-500M VLA - no learned transition model, no VLM, no gating of the policy's own cadence.",
+  "novelty_risk": "Crowded failure-detection-and-recovery neighborhood is the main threat; a SeqVLA follow-up adding recovery is the likely scoop. The delta survives on positioning the debates themselves validated as unoccupied: every killed monitor (C2/C3/C15/C24) died precisely for lacking a concrete recovery lever, and the named neighbors either gate transitions without physical recovery or need a VLM/planner stack. The paper's spine is the quantified failure taxonomy + retry arithmetic on a reproduced 49.0% baseline - a causal decomposition of long-horizon failure that is publishable even if the mechanism's realized gain is moderate. Biggest honest F-risk: a reviewer calling the retreat primitive hand-crafted; answered by its triviality being the point (the frozen policy does the recovery; the primitive only restores its input distribution).",
+  "audit": {
+   "verdict": "REVISION",
+   "note": "engineered against the recorded wave-1 fatal attacks (see answers_attacks field). No dedicated novelty audit yet \u2014 judge Gate A skeptically from nearest_prior_art and novelty_risk fields; a dedicated novelty sweep runs on the final winner before any writing."
+  },
+  "gate_result": {
+   "id": "R4",
+   "A_novelty": false,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": false,
+   "all_pass": false,
+   "reasons": "A: verify-postcondition-then-retry is classical robotics practice \u2014 the candidate's own prior-art list cites OK-Robot's retry heuristics; the surviving delta (1M-param probes replacing a VLM, a hand-scripted 3-step retreat) is efficiency engineering plus analysis (taxonomy, retry arithmetic), not a new mechanism. F: in the crowded failure-detection-and-recovery neighborhood a CoRL/RA-L committee would flag insufficient mechanistic novelty \u2014 a SeqVLA-style follow-up adding physical recovery is the obvious near-term scoop and the differentiation is thin."
+  },
+  "gate_pass_count": 4,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "S2",
+  "name": "Online Persistent-Nuisance Cancellation (two-timescale, perceptually-driven)",
+  "based_on": [
+   "C19",
+   "C29",
+   "C21"
+  ],
+  "answers_attacks": {
+   "C19_unobservable_error": "Attack (C19 gate C / debate): 'the filter updates on an observed action-execution error that is unobservable at deployment -- proprioception captures low-level tracking error (near-zero) ... with demo replays the error collapses to a policy-vs-demo mean offset, at which point the two-timescale structure adds nothing over an EMA'. STRUCTURAL FIX: do not drive the filter by any action error. Drive it by a fully-OBSERVABLE perceptual residual -- the running off-clean-manifold displacement of the frozen feature's nuisance component (reuse S1's metadata-defined nuisance projector, or a small learned nuisance encoder). The state being estimated is the episode's PERSISTENT rendering nuisance z (fixed camera/light offset), which is observable every frame; the mechanism-to-signal chain no longer breaks at its first link.",
+   "C19_collapse_to_EMA": "Attack: 'the two-timescale structure adds nothing over an EMA'. STRUCTURAL FIX: the two timescales are now non-redundant because the perceptual nuisance signal genuinely has two components -- a SLOW persistent per-episode offset (the thing to cancel) and FAST per-frame jitter (must NOT corrupt the persistent estimate). A single EMA either lags the persistent offset or lets jitter poison it; the slow/fast split is what separates them. The slow state feeds a learned de-nuisance transform g(feature, z_slow) that maps the observed feature back to canonical-nuisance; g is trained on clean data with sim metadata, never on perturbations.",
+   "augmentation_wall": "Recurring kill (b): augmentation baselines capture static repairs. STRUCTURAL FIX (by construction): the correction is a PER-EPISODE latent estimated ONLINE from that episode's own frame stream; a fixed augmentation-trained map has no per-episode memory and cannot estimate an episode-specific latent. The un-fakeable signature is monotone-in-time (below)."
+  },
+  "mechanism": "Inference-time state estimator wrapping the frozen feature stream: per frame, encode a low-dim nuisance code; maintain slow state z_slow (long-horizon robust running estimate of the episode's persistent nuisance) and fast state z_fast (short-horizon transient), via the closed-form two-rate update from Smith et al. 2006 (gradient-free, ~tens of params of gain/retention). Apply a small learned de-nuisance transform g(., z_slow) (~1-3M params, trained once on clean sim-metadata pairs) that cancels the persistent offset before features reach the frozen action expert. No backbone or expert gradients at deployment.",
+  "vla_bottleneck": "LIBERO-Plus robustness to PERSISTENT photometric perturbations (lighting/color/texture/distractor-appearance -- each held constant across a rollout), the genuinely task-irrelevant slice where cancellation is well-posed. (Explicitly NOT init-state: init-state changes the correct action, so it is preserved, not cancelled.)",
+  "mechanistic_story": "LIBERO-Plus perturbations are applied once per episode and held fixed, so the nuisance is a persistent latent the agent sees repeatedly. Motor-adaptation theory (Smith et al.) shows a two-rate linear process optimally separates a persistent systematic bias from transient noise using only observations of the bias -- here the bias is an observable perceptual displacement, not an unobservable motor error. Cancelling the slow persistent nuisance sharpens as evidence accumulates within the episode, which no per-frame invariant map can do.",
+  "dimensions_improved": [
+   "Robustness to persistent photometric factors -- causal path: online cancellation of the episode nuisance latent; differentiator vs augmentation is the monotone-in-time improvement.",
+   "Within-episode failure profile / long-horizon stability -- causal path: as z_slow sharpens, MID/LATE-episode chunks receive cleaner features, cutting late-stage compounding failures (distinct measurement: per-timestep failure distribution, not aggregate perturbed SR).",
+   "Data efficiency on the few-shot protocol -- causal path: running the same estimator over the K demos factors out per-demo photometric nuisance so the adapter fits shared structure from fewer demos (distinct benchmark)."
+  ],
+  "integration_path": "Pure inference-time wrapper in the lerobot rollout loop plus a small offline-trained de-nuisance transform; no per-condition action-expert retrain. Applies to any VLA exposing a per-frame feature stream (SmolVLA/pi0/OFT-class).",
+  "diagnostic": "<1 GPU-day, pre-registered. THE by-construction test: plot perturbed SR (or feature-cleanliness) vs frames-elapsed-within-episode for the estimator vs a corruption-augmented baseline. The estimator must show MONOTONE improvement as the episode progresses; the augmentation baseline is flat vs elapsed-frames. If no monotone signature appears, the persistent-latent premise is dead -- cheap, no training run needed beyond the small g. Secondary: ablate slow/fast -> single EMA; if single EMA matches, the two-timescale claim is dead (directly pre-empts the C19 reviewer).",
+  "nearest_prior_art": "TT-VLA / RobustVLA (gradient-based test-time RL of weights -- delta: gradient-free, weights untouched, cancels an explicit perceptual latent); RMA rapid motor adaptation (learned env-factor encoder -- delta: closed-form two-rate filter, no learned dynamics); C21 (static attractor -- delta: online per-episode estimation with the monotone-in-time signature).",
+  "novelty_risk": "MODERATE. Test-time adaptation is a flagged-crowded area; the distinct core is gradient-free per-episode latent cancellation with a falsifiable monotone-in-time signature and the perceptual (not motor-error) drive that fixes C19's fatal flaw. Main risk: photometric nuisance may be too small a slice to move aggregate LIBERO-Plus SR much; scoped narrowly on purpose (narrow-and-true over broad-and-killed).",
+  "audit": {
+   "verdict": "REVISION",
+   "note": "second-surgeon batch engineered against recorded fatal attacks (answers_attacks field). No dedicated novelty audit \u2014 judge Gate A skeptically from nearest_prior_art/novelty_risk; winner gets a dedicated novelty sweep before writing."
+  },
+  "gate_result": {
+   "id": "S2",
+   "A_novelty": false,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": false,
+   "F_publication": false,
+   "all_pass": false,
+   "reasons": "A: surviving twist is RMA-style online env-latent estimation with a fixed two-rate filter instead of a learned encoder, in self-admitted crowded TTA space; novelty hinges on two-rate-vs-EMA, which its own diagnostic names as a kill condition. E: claimed axes 1 and 2 are the same perturbed rollouts re-sliced (aggregate SR vs per-timestep profile) and the few-shot axis is speculative since protocol demos are not photometrically perturbed, leaving <3 plausible distinct improvements. F: narrow photometric slice (conceded effect-size risk) plus filter-choice-level contribution will not survive a CoRL/RA-L PC in a crowded area."
+  },
+  "gate_pass_count": 3,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "S3",
+  "name": "Kernel-Associative Fast-Binding with Calibrated Abstention (few-shot)",
+  "based_on": [
+   "C42",
+   "C45",
+   "C44"
+  ],
+  "answers_attacks": {
+   "C42_hebbian_is_known": "Attack (C42 gate A/F): 'gradient-free Hebbian fast-weight/associative-memory adaptation is classic meta-learning machinery (fast-weight programmers lineage) ... known-mechanism-A bolted onto crowded-scaffold-B'. STRUCTURAL FIX: the contribution is not 'Hebbian write'. The binding is posed as CLOSED-FORM kernel-ridge regression from frozen content features to schema-coefficient corrections, which yields a POSTERIOR VARIANCE for free. That posterior is exactly what fast-weight programmers lack, and it drives a calibrated abstention gate -- a genuine mechanism, not a rebranded outer product.",
+   "C42_fragile_vs_lora": "Attack (C42 gate F): 'the headline claim depends on the fragile bet that a single associative write beats LoRA/fine-tuning baselines ... else the paper collapses to an ablation'. STRUCTURAL FIX: the headline is NOT 'beats LoRA on nominal few-shot SR'. It is 'closed-form binding + calibrated abstention gives comparable few-shot SR at ZERO gradient steps AND zero per-task weights AND fewer confident-wrong actions on OOD queries'. Even if LoRA edges nominal SR, the abstention axis and the no-per-task-weights axis are distinct wins LoRA does not have.",
+   "C45_crowded_basis": "Attack (C45 gate A): 'MoS-VLA already does low-rank basis + few-shot coefficient fitting'. STRUCTURAL FIX: the schema-basis half is conceded as prior art (cite MoS-VLA/MOTIF, claim no novelty there). Novelty is placed entirely on the kernel-posterior binding + abstention gate, which MoS-VLA (closed-form L1, single global basis, no uncertainty, no fallback) does not have."
+  },
+  "mechanism": "Offline: a small shared schema basis over action chunks (VQ or PCA over the multi-task set -- CITED as prior art, not claimed). Few-shot adapt (10-25 demos): fit a closed-form kernel-ridge memory mapping frozen CONTENT features -> per-timestep schema-coefficient corrections; no gradient descent, no backbone touch, no per-task trained weights (just stored keys/values + one matrix solve). Inference: query returns coefficients AND posterior variance; if variance exceeds a calibrated threshold (query far from all demos) ABSTAIN and emit the base policy's zero-shot chunk. Final action = base schema + gated coefficient correction.",
+  "vla_bottleneck": "Few-shot data efficiency at 10-25 demos (explicitly uncharacterized in the project), plus the safety failure where few-shot adapters over-commit confidently on states outside the tiny demo set.",
+  "mechanistic_story": "Biological fast-mapping binds a new instance's content to reusable motor schemas in one shot without re-learning structure; the missing ingredient in prior VLA few-shot work is knowing WHEN the one-shot binding is trustworthy. Kernel regression supplies a principled posterior: near the demos the binding is confident and specializes the policy; far from them it abstains to the zero-shot base, so scarce demos improve in-support behavior without corrupting out-of-support behavior.",
+  "dimensions_improved": [
+   "Data efficiency -- few-shot SR at 10/25/50 demos via closed-form binding (distinct benchmark: few-shot protocol).",
+   "Parameter efficiency -- zero trained weights added per task (only stored KV + a matrix solve), vs LoRA's per-task weight set (distinct axis, orthogonal to SR).",
+   "Robustness via calibrated abstention -- posterior-variance gating reduces confident-wrong actions on out-of-support states, measured as failure-mode composition, not aggregate SR (distinct causal path: knowing-when-not-to-adapt, which no fine-tune baseline provides)."
+  ],
+  "integration_path": "Slot between frozen content features and the flow-matching/L1 expert's conditioning; the correction is additive over a schema basis so it attaches to both stochastic (flow) and deterministic (OFT L1) heads. Per-task adaptation is a matrix solve (seconds); nothing retrained per condition.",
+  "diagnostic": "<1 GPU-day, pre-registered, two-pronged premise kill. (i) Shared-basis viability: fit the closed-form binding on k demos, measure held-out-demo chunk reconstruction vs a LoRA fine-tune on the same k; if closed-form is far worse (shared-basis assumption fails for LIBERO chunks), dead. (ii) Abstention calibration: on held-out states, does posterior variance correlate with actual chunk error (reliability curve)? If uncorrelated, the fallback gate is useless and the distinct 3rd axis collapses -> kill. Both offline, minutes-to-hours, no policy rollout needed to falsify.",
+  "nearest_prior_art": "MoS-VLA (global basis + closed-form L1 coefficient, single demo, no uncertainty/fallback); MOTIF/STAR/Primitive-Subspaces (VQ motifs + fine-tune/LoRA); fast-weight programmers (associative write, no posterior, no abstention). Delta: per-task-family kernel-posterior binding with a calibrated abstention gate on a frozen VLA.",
+  "novelty_risk": "MODERATE-HIGH. 'GP/kernel adapter head' can be read as known; the delta is the abstention gate as a first-class robustness axis + gradient-free + frozen-VLA few-shot positioning. Risk: if the shared-basis assumption is weak (diagnostic i fails), the whole thing degrades to a worse-than-LoRA ablation. The diagnostic is designed to catch that before compute.",
+  "audit": {
+   "verdict": "REVISION",
+   "note": "second-surgeon batch engineered against recorded fatal attacks (answers_attacks field). No dedicated novelty audit \u2014 judge Gate A skeptically from nearest_prior_art/novelty_risk; winner gets a dedicated novelty sweep before writing."
+  },
+  "gate_result": {
+   "id": "S3",
+   "A_novelty": false,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": false,
+   "all_pass": false,
+   "reasons": "A: with the schema basis conceded to MoS-VLA, the residual claim (kernel-ridge posterior + variance-gated abstention) is standard GP/selective-prediction machinery a reviewer will map to VINN-style nonparametric imitation plus ThriftyDAgger-style uncertainty gating; not affirmatively new. F: the repositioned headline concedes LoRA may win nominal few-shot SR, so the paper reads as an efficiency/application study of known components in a crowded few-shot-adaptation area."
+  },
+  "gate_pass_count": 4,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "S4",
+  "name": "Disentangle-Repair-Bind (integrated build: S1 decomposition feeding S3 binding)",
+  "based_on": [
+   "S1",
+   "S3",
+   "C21",
+   "C42"
+  ],
+  "answers_attacks": {
+   "bag_of_tricks": "Attack (recurring, C4 R3 flavor): a mechanism spanning >=3 axes reads as 'a subtle multi-part ablation / bag of tricks' rather than one contribution. STRUCTURAL FIX: this is deliberately ONE learned object -- the metadata-disentangled nuisance/content split -- reused at two stages of one pipeline (repair the nuisance factor at inference; bind on the clean content factor for few-shot). The unifying thesis (a frozen VLA's robustness AND its few-shot adaptability are both limited by nuisance-entangled conditioning) makes the three axes fall out of one representation, not three independent hacks.",
+   "three_distinct_paths": "Attack (recurring, C7 R3): 'robustness, SR, generalization -- one measurement counted three times'. STRUCTURAL FIX: the three axes are measured on three DIFFERENT benchmarks with three different causal mechanisms -- held-out-factor robustness (LIBERO-Plus, projection), few-shot SR (10-25 demo protocol, clean-content binding), and calibrated abstention (failure-mode composition, kernel posterior) -- so no single number is reused.",
+   "perception_graveyard": "Attack (batch-wide): downstream monitors die because their inputs are corrupted. STRUCTURAL FIX: the repair stage is strictly UPSTREAM (nuisance projection before the frozen expert), the only intervention point the debates left standing."
+  },
+  "mechanism": "Stage 1 (S1): metadata-disentangled nuisance/content projector; at inference, project the nuisance factor to its clean marginal (repair), leave content free. Stage 2 (S3): use the repaired CONTENT code as the key for closed-form kernel-associative few-shot binding with calibrated abstention. Both stages share the single disentanglement adapter; backbone and action expert frozen; per-task adaptation is a matrix solve.",
+  "vla_bottleneck": "Joint: LIBERO-Plus appearance robustness (Stage 1) and 10-25-demo data efficiency with safe abstention (Stage 2), unified by nuisance-entangled conditioning as the shared root cause.",
+  "mechanistic_story": "A frozen VLA conditions on features that entangle rendering nuisance with task content. That entanglement hurts twice: OOD appearance shifts move the whole conditioning off-manifold (robustness), and few-shot adapters waste scarce demos fighting nuisance variance (data efficiency). One disentanglement fixes both -- project nuisance to clean for robustness, bind on clean content for data efficiency -- and the kernel posterior over the binding adds calibrated abstention.",
+  "dimensions_improved": [
+   "Held-out-factor robustness (LIBERO-Plus) -- Stage-1 manifold projection.",
+   "Few-shot SR at 10/25/50 demos -- Stage-2 clean-content binding.",
+   "Calibrated abstention / confident-wrong reduction -- Stage-2 kernel posterior (distinct failure-mode measurement)."
+  ],
+  "integration_path": "Single adapter at the vision/connector boundary shared by SmolVLA/pi0/OFT-class VLAs; trained once on clean sim-metadata features; inference-time projection + closed-form per-task solve. No action-expert retrain per condition.",
+  "diagnostic": "<1 GPU-day: run S1's held-out-factor diagnostic and S3's shared-basis + abstention-calibration diagnostic on the SAME disentanglement adapter. Additional gate: verify Stage 2 on repaired-content beats Stage 2 on raw-content (if repair doesn't help binding, the 'shared root cause' thesis is false and the two stages should be separate papers).",
+  "nearest_prior_art": "Union of S1 and S3 prior art; nothing found combining metadata-disentangled upstream repair with kernel-posterior few-shot binding on a frozen VLA. Delta: the shared-decomposition thesis unifying robustness and data efficiency.",
+  "novelty_risk": "MODERATE. This is the recommended single deliverable: cleanest >=3-distinct-path story and lowest reviewer surface because both wins trace to one representation. Risk: it is a two-stage system, so ablations must clearly attribute gains to each stage (built into the diagnostic). If either stage's premise dies in diagnostics, fall back to shipping S1 and S3 as independent contributions.",
+  "audit": {
+   "verdict": "REVISION",
+   "note": "second-surgeon batch engineered against recorded fatal attacks (answers_attacks field). No dedicated novelty audit \u2014 judge Gate A skeptically from nearest_prior_art/novelty_risk; winner gets a dedicated novelty sweep before writing."
+  },
+  "gate_result": {
+   "id": "S4",
+   "A_novelty": false,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": false,
+   "all_pass": false,
+   "reasons": "A: everything beyond S1's core is conceded-known machinery (S3's kernel head), so the case rests on combination novelty ('nothing found combining') with no dedicated audit \u2014 not affirmatively strong on its own. F: two-stage system with double premise risk and stage-2 novelty conceded invites the review outcome 'drop stage 2, resubmit as the S1 paper'; the candidate's own fallback plan to split into two papers concedes it is not one contribution."
+  },
+  "gate_pass_count": 4,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "C21",
+  "name": "Reconsolidation-Style Associative Memory for Perceptual Robustness",
+  "source_domain": "cognitive science \u2014 memory reconsolidation / attractor dynamics",
+  "mechanism": "A small (~5-10M param) modern-Hopfield/dense-associative-memory layer between the raw per-camera embeddings and the frozen backbone input. Offline, store a compact prototype bank (hundreds-to-thousands of clustered embeddings) of clean training-distribution viewpoint/lighting states. At inference, a perturbed observation undergoes one or two Hopfield pattern-completion steps that pull it toward the nearest stored clean-manifold attractor before the frozen backbone sees it.",
+  "source_papers": [
+   "Hopfield 1982, PNAS 79(8)",
+   "Nader, Schafe & LeDoux 2000, Nature 406 (reconsolidation)"
+  ],
+  "vla_bottleneck": "robustness collapse under LIBERO-Plus (viewpoint and lighting are the named worst factors)",
+  "mechanistic_story": "Reconsolidation theory holds a retrieved memory trace is briefly labile and actively repaired against the current (possibly corrupted) context before use \u2014 a correction step, not a static lookup. A frozen backbone has no equivalent: a perturbed view feeds straight through. An attractor-based correction layer actively pulls the perturbed embedding back toward the nearest clean-training attractor before the backbone ever sees it \u2014 repairing the input rather than hoping frozen features generalize.",
+  "dimensions_improved": [
+   "robustness",
+   "generalization"
+  ],
+  "nearest_vla_prior_art": "Closest are memory-augmented VLA robustness papers \u2014 MAP-VLA (2511.09516), MemoryVLA (2508.19236), SOMA (2603.24060) \u2014 and 'When Robots Sleep' (2606.17493). All retrieve/replay stored experience for in-context adaptation or continual-skill stability; none use attractor/Hopfield pattern-completion on the perception embedding itself to correct a single corrupted observation. Distinct from killed #2 (freeze more of the network): this adds an active correction module in front of the frozen backbone.",
+  "integration_path": "Dense-associative-memory layer between per-camera embeddings and the frozen connector; prototype bank built once via a forward pass over training rollouts, few learnable params (~5-10M, mostly read/write projection) trained with a reconstruction/contrastive objective on clean-vs-perturbed pairs (synthetic perturbations offline). A few hours on 1xA100.",
+  "novelty_confidence": 0.65,
+  "pre_flag": "Adjacent to crowded memory-module-for-long-horizon area; differentiator is attractor pattern-completion for single-observation correction, not experience replay.",
+  "audit": {
+   "verdict": "NOVEL",
+   "evidence_papers": [
+    "MAP-VLA: Memory-Augmented Prompting for VLA (2511.09516)",
+    "MemoryVLA: Perceptual-Cognitive Memory in VLA (2508.19236)",
+    "SOMA: Strategic Orchestration and Memory-Augmented System (2603.24060)",
+    "Dual-Memory Consolidation with Sleep-Wake Replay for VLA Specialization",
+    "Vision Hopfield Memory Networks for Image Recognition (2603.25157)"
+   ],
+   "novelty_confidence": 0.7,
+   "nearest_prior_art": "MAP-VLA, MemoryVLA, SOMA, and the sleep-wake-replay VLA paper all confirmed as real, and all operate on temporal/demonstration history for long-horizon task adaptation (soft-prompt libraries, cognition-memory-action loops, episodic-vs-semantic consolidation). None apply Hopfield/dense-associative-memory pattern-completion to pull a single corrupted current-frame perception embedding toward a clean-manifold attractor before the frozen backbone sees it. Vision Hopfield Memory Networks exist for general image recognition but not wired into a VLA robustness pipeline.",
+   "notes": "Genuinely distinct mechanism target (single-observation perceptual denoising via attractor dynamics) vs. the crowded memory-for-long-horizon cluster (which is about temporal context/experience replay, a different problem)."
+  },
+  "gate_result": {
+   "id": "C21",
+   "A_novelty": true,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": false,
+   "F_publication": true,
+   "all_pass": false,
+   "reasons": "E: fails the >=3-dimension test \u2014 claims only robustness+generalization, which on LIBERO-Plus are the same measurement wearing two hats; nominal SR is at best unchanged (prototype quantization risks degrading it), novel-object generalization is plausibly HURT by snap-to-training-prototype, and it adds params/latency/compute rather than improving them, so the affirmative case is 1-2 axes, not 3."
+  },
+  "gate_pass_count": 5,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "C12",
+  "name": "Reliability-Weighted Habit/Goal-Directed Blending",
+  "source_domain": "cognitive science \u2014 habit formation vs goal-directed control",
+  "mechanism": "Run two parallel branches off frozen backbone features: a cheap 'habit' branch (low-rank flow head conditioned only on proprioception + previous action chunk, producing long smooth reactive chunks) and the standard 'goal-directed' branch (full vision+language flow-matching expert). A small arbitration head maintains a running reliability estimate of each branch (prediction consistency/error) and blends their predicted velocity fields per step, shifting toward the habit branch when reliable (cheap, robust to visual perturbation) and toward the goal-directed branch when novelty/disagreement is high.",
+  "source_papers": [
+   "Daw, Niv & Dayan 2005, Nature Neuroscience 8, 1704-1711",
+   "Viejo et al., bioRxiv 2020.11.24.396630"
+  ],
+  "vla_bottleneck": "robustness collapse (LIBERO-Plus viewpoint/init-state) and long-horizon stage-transition failures",
+  "mechanistic_story": "Daw et al.'s arbitration model shows animals weight a cheap cached (habitual) controller vs an expensive deliberative one by estimated reliability, not a fixed schedule. Under LIBERO-Plus perturbations the vision-conditioned branch's reliability should measurably drop while a proprioception-only habit branch stays stable for well-practiced sub-motions (transport, reach) \u2014 arbitrating by measured reliability, not a hand-tuned mix, should recover success specifically on the perturbation axes that collapse hardest.",
+  "dimensions_improved": [
+   "robustness",
+   "success rate",
+   "latency"
+  ],
+  "nearest_vla_prior_art": "No VLA paper found combining reliability-based habit/goal-directed arbitration. Found only VLA uncertainty-for-failure-detection (2606.20754; token-level uncertainty, OpenReview NX0euXAv98) and the neuroscience arbitration literature, never joined.",
+  "integration_path": "Low-rank habit head (~10-20M params) parallel to the flow-matching expert, plus a ~1-3M param arbitration/reliability head reading recent per-step prediction-error statistics, outputting a mixing weight applied at the velocity-field level (convex combination of two velocity predictions is well-defined in flow matching). Habit head trains on demo chunks with vision dropped; arbitration head via short supervised/bandit objective. Backbone frozen.",
+  "novelty_confidence": 0.7,
+  "pre_flag": "Distinct from crowded 'dual-system fast/slow VLA' (which arbitrates by compute/latency budget, not measured reliability) and from killed #3 RTC (which smooths chunk boundaries within one decoder).",
+  "audit": {
+   "verdict": "PARTIAL",
+   "evidence_papers": [
+    "Daw, Niv & Dayan 2005, Nature Neuroscience 8 (candidate's own)",
+    "Caluwaerts et al., A biologically inspired meta-control navigation system for the Psikharpax rat robot, Bioinspiration & Biomimetics 7:025009, 2012",
+    "Improving Robot Dual-System Motor Learning with Intrinsically Motivated Meta-Control and Latent-Space Experience Imagination (arXiv:2004.08830)",
+    "How to Reduce Computation Time While Sparing Performance During Robot Navigation? A Neuro-Inspired Architecture for Autonomous Shifting Between Model-Based and Model-Free Learning (arXiv:2004.14698)"
+   ],
+   "novelty_confidence": 0.4,
+   "nearest_prior_art": "Caluwaerts et al. 2012 implements reliability-tracked meta-control arbitration between a cheap habitual/taxon navigation strategy and an expensive goal-directed/planning strategy on a physical robot; arXiv:2004.08830 and 2004.14698 do the same model-based/model-free reliability arbitration in more recent robot motor-learning settings.",
+   "notes": "The named prior art matches the core cognitive mechanism (measure each branch's reliability, shift control accordingly between a cheap habitual and an expensive goal-directed system) on real/simulated robots, predating VLA - this is a repeatedly-reused classical robotics idea, not a fresh joining as the candidate claims. Surviving twist: continuous per-step blending of two predicted velocity fields inside a frozen-VLA flow-matching architecture (vs. discrete strategy/expert selection in the prior art), evaluated for LIBERO-Plus robustness - real but narrower than 'no VLA paper found' suggests, since the underlying arbitration mechanism itself is not new to robotics."
+  },
+  "gate_result": {
+   "id": "C12",
+   "A_novelty": false,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": false,
+   "all_pass": false,
+   "reasons": "A: reliability-tracked arbitration between a cheap habitual and an expensive goal-directed controller is already implemented on robots three times over (Caluwaerts 2012 Psikharpax; arXiv:2004.08830; arXiv:2004.14698) \u2014 the surviving twist (convex blend of two velocity fields inside flow matching) is an implementation detail, not a substantial contribution; audit confidence 0.4 is the batch floor. F: a CoRL/RA-L PC sees a classical cog-sci robotics mechanism re-applied inside the already-crowded dual-system fast/slow VLA space; the reliability-vs-compute-budget distinction is too thin to survive as the headline contribution."
+  },
+  "gate_pass_count": 4,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "C13",
+  "name": "RD-IB \u2014 Rate-Distortion / Multi-View Information Bottleneck Adapter",
+  "source_domain": "information bottleneck / mutual-information regularization",
+  "mechanism": "Insert a small variational information-bottleneck layer between the frozen SmolVLM2 features and the flow-matching expert, trained with a multi-view IB objective (LIBERO's multiple camera streams, or clean/augmented view pairs, as 'views') that keeps only cross-view-shared information and discards view-specific nuisance via an explicit MI Lagrangian (rate-distortion sweep over beta).",
+  "source_papers": [
+   "Alemi, Fischer, Dillon, Murphy \u2014 Deep Variational Information Bottleneck, ICLR 2017 (arXiv 1612.00410)",
+   "Federici et al. \u2014 Multi-View Information Bottleneck, ICLR 2020 (arXiv 2002.07017)",
+   "Fan & Li \u2014 DRIBO, ICML 2022"
+  ],
+  "vla_bottleneck": "robustness collapse \u2014 camera-viewpoint (worst LIBERO-Plus factor, ~56%), plus lighting/distractor",
+  "mechanistic_story": "LIBERO-Plus analysis shows viewpoint/init-state shift, not missing task understanding, drives failure, and this project's own linear probe shows frozen features carry sufficient action-predictive information (R^2=0.75) \u2014 so the problem is nuisance (view-specific) information entangled with task-relevant information. A trainable IB adapter squeezes out nuisance channels via a formal rate-distortion tradeoff without altering the frozen backbone.",
+  "dimensions_improved": [
+   "robustness",
+   "latency",
+   "compute efficiency",
+   "data efficiency"
+  ],
+  "nearest_vla_prior_art": "DRIBO applies multi-view IB to image-based RL, not VLA, not frozen-backbone imitation, never LIBERO-Plus. No VLA paper found using IB/MIB as a trainable adapter for viewpoint robustness. Distinct from killed #2 (freeze the whole encoder) and killed #7 (VICReg anti-collapse for unfrozen backbone): RD-IB keeps the backbone frozen and adds a compressive layer to discard conceded-present nuisance info.",
+  "integration_path": "Small variational bottleneck (mu/sigma heads + reparameterized sample, dim ~64-128) into SmolVLA's connector. Train with existing action loss + beta*I(Z;X_view) using camera views or photometric augmentation as paired-view signal, sweeping beta. ~2-10M new params, fits SmolVLA's ~20h/1xA100 finetune budget.",
+  "novelty_confidence": 0.7,
+  "pre_flag": "",
+  "audit": {
+   "verdict": "PARTIAL",
+   "evidence_papers": [
+    "Peng et al., Variational Discriminator Bottleneck (VDB), arXiv:1810.00821, ICLR 2019",
+    "Federici et al., Multi-View Information Bottleneck, arXiv:2002.07017 (candidate's own source)",
+    "'Learning Representations in RL: An Information Bottleneck Approach', arXiv:1911.05695"
+   ],
+   "novelty_confidence": 0.6,
+   "nearest_prior_art": "VDB (arXiv:1810.00821) already applies an IB/mutual-information constraint inside imitation learning to get invariant, robust representations; IB-for-RL representation work also targets nuisance-invariance. No hit combines this with a frozen-VLM+flow-matching VLA, multi-camera LIBERO views, or a beta rate-distortion sweep for viewpoint robustness specifically.",
+   "notes": "Surviving twist: multi-view (cross-camera) IB formulation as a bolt-on adapter for a frozen VLA backbone targeting LIBERO-Plus viewpoint robustness, vs. VDB's single-view discriminator-bottleneck use in classic imitation learning. Distinct enough to survive but adjacent enough that VDB/IB-RL must be cited as prior art, not claimed as absent."
+  },
+  "gate_result": {
+   "id": "C13",
+   "A_novelty": false,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": false,
+   "all_pass": false,
+   "reasons": "A: DRIBO (ICML 2022) already uses multi-view IB for visual-control robustness and VDB (ICLR 2019) already puts an IB inside imitation learning; the surviving delta \u2014 same objective bolted onto a frozen VLA connector and evaluated on LIBERO-Plus \u2014 is backbone/benchmark transfer of a 2017/2020 technique, not an actually-new mechanism. F: 'we added a variational IB adapter and robustness improved' is the canonical incremental-application paper in a crowded invariant-representation literature; absent a surprising mechanism it does not survive a program committee, and TMLR-style well-executed-application is below the stated Q1/Q2 contribution bar."
+  },
+  "gate_pass_count": 4,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "C19",
+  "name": "Two-State Fast/Slow Motor-Adaptation Filter",
+  "source_domain": "state-space models of motor adaptation",
+  "mechanism": "A ~10-parameter, gradient-free two-rate state-space filter (fast state: high error-sensitivity/low retention; slow state: low sensitivity/high retention, per Smith et al.) applied as an additive corrective bias to the frozen flow-matching expert's output chunk. After each of the first few rollouts in a new setting (new camera pose, object, lighting), the filter updates its two states from observed action-execution error via closed-form linear rules \u2014 no optimizer, no gradients.",
+  "source_papers": [
+   "Smith, Ghazizadeh & Shadmehr, 'Interacting adaptive processes with different timescales underlie short-term motor learning', PLoS Biology 2006"
+  ],
+  "vla_bottleneck": "few-shot data efficiency at 10-25 demos, plus robustness to systematic viewpoint/init-state bias",
+  "mechanistic_story": "Smith et al. show human adaptation to a systematic sensorimotor perturbation is explained by two superposed linear processes giving rapid initial correction plus stable long-term calibration. A consistent camera-viewpoint shift or new-object-pose offset in LIBERO-Plus is structurally the same systematic bias their model corrects in a handful of trials, directly targeting the 10-25 demo few-shot regime. Learns no dynamics \u2014 a closed-form bias filter, outside the world-model exclusion.",
+  "dimensions_improved": [
+   "data efficiency",
+   "robustness",
+   "generalization"
+  ],
+  "nearest_vla_prior_art": "On-the-Fly VLA Adaptation via Test-Time RL (arXiv 2601.06748) and RobustVLA (arXiv 2511.01331) adapt VLAs online but via gradient-based RL/fine-tuning of weights \u2014 a different mechanism class from a closed-form, gradient-free two-rate bias filter that never touches a weight.",
+  "integration_path": "Stateless-between-episodes, ~10-parameter post-hoc corrector wrapping the flow-matching output in the inference loop; update rules run in microseconds. Pre-registered success criterion: k-shot (k=1,3,5) success on held-out LIBERO-Plus viewpoint/init-state, filter on vs off, same seeds \u2014 essentially free (no training run).",
+  "novelty_confidence": 0.7,
+  "pre_flag": "",
+  "audit": {
+   "verdict": "NOVEL",
+   "evidence_papers": [
+    "On-the-Fly VLA Adaptation via Test-Time Reinforcement Learning (2601.06748)",
+    "RobustVLA: Robustness-Aware Reinforcement Post-Training for VLA (2511.01331)",
+    "Rapid motor adaptation for robotic manipulator arms (CVPR 2024)",
+    "S2-VLA: State-Space Guided VLA Models (2606.27872)"
+   ],
+   "novelty_confidence": 0.65,
+   "nearest_prior_art": "TT-VLA (2601.06748) and RobustVLA (2511.01331) do test-time/online adaptation but via gradient-based RL post-training of weights. RMA-style rapid motor adaptation (CVPR 2024, following Kumar et al.) uses a learned neural environment-factor encoder, not a closed-form two-rate linear state filter. No VLA paper found using a gradient-free, ~10-parameter two-rate (Smith et al. 2006) filter as an additive bias on a frozen flow-matching head's output.",
+   "notes": "Core mechanism (closed-form fast/slow state filter, no optimizer, correcting output not weights) is a clean transplant from motor-adaptation literature; nothing in VLA space matches. Thin in scope (10 params) but structurally distinct from all adjacent test-time-adaptation work, which is uniformly gradient-based."
+  },
+  "gate_result": {
+   "id": "C19",
+   "A_novelty": true,
+   "B_importance": true,
+   "C_mechanism": false,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": false,
+   "all_pass": false,
+   "reasons": "C: the filter updates on an 'observed action-execution error' that is unobservable at deployment \u2014 proprioception captures low-level tracking error (near-zero, the arm faithfully executes the wrongly-targeted command), not the perceptual bias; with demo replays the error collapses to a policy-vs-demo mean offset, at which point the two-timescale structure adds nothing over an EMA and the mechanism-to-metric chain breaks at its first link. F: a ~10-parameter additive bias filter (audit's own words: 'thin in scope') reads to a program committee as an EMA bias corrector with neuroscience branding, not a standalone CoRL/RA-L contribution."
+  },
+  "gate_pass_count": 4,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "C20",
+  "name": "Funnel-Gated Re-Inference (adaptive chunk horizon via prescribed-performance control)",
+  "source_domain": "funnel control / prescribed performance control",
+  "mechanism": "Wrap execution in a funnel-control monitor: define a scalar/low-dim tracking error e(t) (predicted-vs-realized end-effector pose from the last chunk, from proprioception) and a time-varying funnel boundary phi(t) that starts wide and decays. While e(t) stays inside phi(t), keep executing the current open-loop chunk (skip backbone passes); when e(t) approaches the boundary, force early re-inference. No neural net \u2014 a model-free high-gain feedback law used only as a re-trigger.",
+  "source_papers": [
+   "arXiv 2302.01754 (Berger et al., robust funnel MPC)",
+   "arXiv 2310.15544 (Berger et al., funnel control with internal models)",
+   "arXiv 2602.22458 (Dennst\u00e4dt thesis, funnel MPC)",
+   "Bechlioulis & Rovithakis, IEEE TAC 2008 (prescribed performance control, foundational)"
+  ],
+  "vla_bottleneck": "latency/compute (backbone dominates) and long-horizon drift (fixed-schedule re-inference lets error accumulate silently)",
+  "mechanistic_story": "The funnel gives a formal, monotonically-tightening bound on allowable tracking error instead of a fixed re-plan interval. On easy rollouts the funnel lets the policy run the backbone far less often (cutting compute/latency); when a perturbation pushes the trajectory off nominal, the funnel catches it early \u2014 before it compounds into a chunk-boundary failure \u2014 and forces a fresh VLM call.",
+  "dimensions_improved": [
+   "latency",
+   "compute efficiency",
+   "robustness",
+   "success rate"
+  ],
+  "nearest_vla_prior_art": "Closest is killed #3 (continuation-conditioned/RTC AR decoding, 2512.05964, 2606.13355) \u2014 but RTC changes the decoder architecture/training; funnel-gating is a training-free, architecture-agnostic runtime monitor deciding WHEN to call the backbone, applicable to flow-matching/L1/AR heads unmodified.",
+  "integration_path": "Near-zero-parameter wrapper in lerobot's rollout loop around select_action/chunk-execution: track a scalar error from proprioception, compare to a hand-set/tuned funnel schedule, short-circuit into an early backbone call when breached. Only 2-3 funnel hyperparameters to tune; inference-only, testable in under a day.",
+  "novelty_confidence": 0.75,
+  "pre_flag": "Replan-cadence cluster (C20/C31/C42/C43/C51/C52/C29): adjacent to killed #3 (RTC) and crowded adaptive-chunking (DVAC, HiPolicy, AAC).",
+  "audit": {
+   "verdict": "PARTIAL",
+   "evidence_papers": [
+    "VLA-Corrector: Lightweight Detect-and-Correct Inference for Adaptive Action Horizon (2607.01804)",
+    "Adaptive Action Chunking at Inference-time for VLA (AAC, 2604.04161)",
+    "HiPolicy: Hierarchical Multi-Frequency Action Chunking (2604.06067)",
+    "Leave No Observation Behind / A2C2 (2509.23224)",
+    "Training-Time Action Conditioning for Efficient Real-Time Chunking (RTC, 2512.05964)",
+    "Real-Time Execution with Autoregressive Policies (2606.13355)",
+    "Robust Funnel Model Predictive Control (2302.01754)",
+    "Overcoming Dynamics-Blindness: Pace-and-Path Correction (2605.11459)"
+   ],
+   "novelty_confidence": 0.25,
+   "nearest_prior_art": "VLA-Corrector (2607.01804, found live in search, not in the candidate's own prior-art list) already implements the identical high-level pattern: a monitor continuously compares predicted-vs-actual state, and on persistent deviation it interrupts the current open-loop chunk and triggers corrective replanning, otherwise preserving long-chunk efficiency during stable execution ('event-triggered adaptive action horizon'). AAC/HiPolicy independently gate chunk length on prediction entropy. RTC/A2C2 solve the adjacent but distinct problem of smoothing chunk boundaries.",
+   "notes": "Surviving twist is real but narrow: VLA-Corrector's trigger is a learned Latent-space Vision Monitor + gradient-guided replanning (touches a trained module); C20's trigger is a model-free, gradient-free control-theoretic funnel boundary over a low-dim proprioceptive signal with a formal prescribed-performance guarantee. Framing/goal is now demonstrably crowded (VLA-Corrector, AAC, HiPolicy all published), so the pitch must foreground 'provably-bounded, net-free monitor' as the distinguishing claim, not 'adaptive re-inference cadence' itself."
+  },
+  "gate_result": {
+   "id": "C20",
+   "A_novelty": false,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": false,
+   "all_pass": false,
+   "reasons": "A: audit is PARTIAL at 0.25 confidence \u2014 VLA-Corrector (2607.01804) already ships the identical event-triggered adaptive-action-horizon pattern (monitor predicted-vs-actual state, interrupt chunk, replan), and the surviving twist is a trigger swap (hand-set funnel schedule vs learned monitor), not a substantial mechanism. F: crowded replan-cadence cluster (own pre_flag; AAC, HiPolicy, VLA-Corrector all published, the last missed by the candidate's own search), and the headline 'prescribed-performance guarantee' is hollow \u2014 a monitor-only funnel enforces nothing since triggered re-inference gives no bound that error re-enters the funnel, so the one differentiating claim dies under a control-theory reviewer."
+  },
+  "gate_pass_count": 4,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ },
+ {
+  "id": "C26",
+  "name": "Self-Conditioned Action Flow",
+  "source_domain": "diffusion-flow (self-conditioning / distillation-free sample-quality trick)",
+  "mechanism": "During training, with some probability run the action-expert's step with a zeroed 'previous clean-action estimate' channel to get a cheap x0-hat (no gradient), then re-run conditioning additionally on that x0-hat. At inference, each flow step reuses the PREVIOUS step's implicit clean-action estimate (available for free from v=(x-x0)/(1-t)) as extra conditioning \u2014 no added NFEs.",
+  "source_papers": [
+   "arXiv:2208.04202 (Chen, Zhang, Hinton, 'Analog Bits: ... Self-Conditioning', ICLR 2023)"
+  ],
+  "vla_bottleneck": "long-horizon collapse (SmolVLA 49-71% vs OFT-7B 94%+ on LIBERO-Long) via reduced per-chunk estimation noise, at zero added inference cost",
+  "mechanistic_story": "Standard flow matching predicts velocity purely from the current noisy sample and t, forgetting how earlier steps refined the estimate. Chen et al. show self-conditioning gives a large sample-quality gain at FIXED NFE because the network builds on its own running guess; the effect is largest at high noise, which for an action chunk corresponds to disambiguating the sub-goal before committing to fine motor detail. A better-conditioned per-step estimate reduces per-chunk noise that compounds across a long episode.",
+  "dimensions_improved": [
+   "success rate",
+   "robustness",
+   "latency",
+   "compute efficiency"
+  ],
+  "nearest_vla_prior_art": "Past-Token-Prediction (2505.09561) and Training-Time RTC condition on PAST CHUNK boundaries across the control loop \u2014 a different object from the WITHIN-CHUNK running denoising estimate. No VLA paper found reusing the within-trajectory x0-estimate as conditioning.",
+  "integration_path": "Modify the action-expert forward pass to accept an extra x0_hat input (zero-init on first call), concatenated with the noisy chunk before cross-attention; train with the standard 50%-probability self-conditioning recipe. Adds a small input-projection (~few hundred K params); same NFE, same data, fits the ~4h/20k-step finetune budget.",
+  "novelty_confidence": 0.65,
+  "pre_flag": "",
+  "audit": {
+   "verdict": "NOVEL",
+   "evidence_papers": [
+    "Self-Guided Action Diffusion (arXiv:2508.12189)",
+    "WarmPrior: Straightening Flow-Matching Policies with Temporal Priors (arXiv:2605.13959)",
+    "Frequency-Aware Flow Matching for Continuous and Consistent Robotic Action Generation (arXiv:2606.20135)",
+    "Action-to-Action Flow Matching (arXiv:2602.07322)"
+   ],
+   "novelty_confidence": 0.65,
+   "nearest_prior_art": "None found in VLA/robot-policy space; Self-Guided Action Diffusion conditions on proprioceptive/action history + VLM cross-attention, a different mechanism (external state conditioning, not within-trajectory reuse of the model's own implicit x0-estimate).",
+   "notes": "Self-conditioning (Analog Bits, Chen/Zhang/Hinton) is an established general diffusion trick being transplanted, not invented here -- but no VLA/action-expert paper reusing the free within-step x0-hat as extra conditioning was found across 3 searches. Distinguish clearly from Past-Token-Prediction/RTC (cross-chunk boundary conditioning), which candidate itself correctly separates."
+  },
+  "gate_result": {
+   "id": "C26",
+   "A_novelty": false,
+   "B_importance": true,
+   "C_mechanism": true,
+   "D_generality": true,
+   "E_efficiency": true,
+   "F_publication": false,
+   "all_pass": false,
+   "reasons": "A: NOVEL-by-absence only \u2014 self-conditioning (Analog Bits) is a famous, widely-reused diffusion trick (e.g. RFdiffusion, RIN); this is a zero-adaptation transplant with no VLA-specific design, so a reviewer says 'known trick untried here', not 'actually new'. F: 'we added a standard training trick to a flow-matching VLA' reads as an ablation-grade increment at a CoRL/RA-L PC unless gains are dramatic; the long-horizon link (per-chunk sampling noise drives the 23-46pt gap) is itself unproven, weakening the pitch."
+  },
+  "gate_pass_count": 4,
+  "debate_record": [],
+  "committee_note": "FULL RECORD CONTEXT: across 4 waves, 67 mechanisms were screened; 4 passed all six gates and ALL FOUR were killed in adversarial debates. No candidate fully survived. Rank on the totality of the record: mechanism soundness after attacks, cheapness/decisiveness of the pre-registered diagnostic, and honest publication path (including negative-result or measurement framings)."
+ }
+]

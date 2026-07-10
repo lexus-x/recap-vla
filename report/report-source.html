@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VLA Novelty Mission — Report</title>
+<style>
+  :root {
+    --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #1baf7a;
+    --ord-1: #86b6ef; --ord-2: #5598e7; --ord-3: #2a78d6; --ord-4: #1c5cab;
+    --good: #0ca30c; --critical: #d03b3b; --good-text: #006300;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--surface); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 10.5pt; line-height: 1.5; }
+  @page { size: A4; margin: 13mm 15mm; }
+  .page { max-width: 180mm; margin: 0 auto; }
+  section { break-inside: avoid; margin-bottom: 22px; }
+  h1 { font-size: 21pt; line-height: 1.2; letter-spacing: -0.01em; }
+  h2 { font-size: 13.5pt; margin-bottom: 6px; break-after: avoid; letter-spacing: -0.01em; }
+  h3 { font-size: 11pt; margin-bottom: 4px; }
+  p { margin-bottom: 7px; }
+  .sub { color: var(--ink-2); }
+  .mut { color: var(--muted); font-size: 8.5pt; }
+  .rule { border: none; border-top: 1px solid var(--grid); margin: 14px 0; }
+  .pagebreak { break-before: page; }
+
+  .tiles { display: flex; gap: 10px; margin: 14px 0 4px; }
+  .tile { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .tile .v { font-size: 20pt; font-weight: 650; line-height: 1.1; }
+  .tile .k { color: var(--ink-2); font-size: 8.5pt; margin-top: 2px; }
+
+  .chart { margin: 10px 0 4px; }
+  .chart svg { display: block; }
+  .caption { color: var(--muted); font-size: 8.5pt; margin-top: 4px; }
+  .legend { display: flex; gap: 16px; font-size: 8.5pt; color: var(--ink-2); margin: 2px 0 6px; }
+  .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--baseline); padding: 4px 8px 4px 0; }
+  td { border-bottom: 1px solid var(--grid); padding: 5px 8px 5px 0; vertical-align: top; }
+  td.num, th.num { font-variant-numeric: tabular-nums; text-align: right; padding-right: 14px; }
+
+  .cards { display: flex; gap: 10px; }
+  .card { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .badge { display: inline-block; font-size: 8pt; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--ink-2); }
+  .findings li { margin: 0 0 6px 0; }
+  ol, ul { padding-left: 18px; }
+  .winner-box { border: 1.5px solid var(--s1); border-radius: 10px; padding: 12px 14px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ============ HEADER ============ -->
+<section>
+  <p class="mut">vla-n research project · autonomous multi-agent discovery run · 10 July 2026</p>
+  <h1>Can a small robot AI beat the big ones?<br>A 67-idea search, and what survived.</h1>
+  <p class="sub" style="margin-top:8px; font-size:11pt;">
+    We ran an automated research lab for a day: dozens of AI agents mined ideas from 14 scientific fields,
+    checked each against published work, and attacked the survivors the way harsh journal reviewers would.
+    The honest result: <b>no idea survived unwounded</b> — and that finding, plus one repair-minded winner
+    with a free first experiment, is the deliverable.
+  </p>
+  <div class="tiles">
+    <div class="tile"><div class="v">67</div><div class="k">candidate mechanisms generated &amp; screened</div></div>
+    <div class="tile"><div class="v">4</div><div class="k">passed all six review gates</div></div>
+    <div class="tile"><div class="v">0</div><div class="k">survived adversarial debate intact</div></div>
+    <div class="tile"><div class="v">R4</div><div class="k">committee's winner — “check &amp; retry” (confidence 0.55)</div></div>
+  </div>
+</section>
+
+<!-- ============ CONTEXT ============ -->
+<section>
+  <h2>1 · The goal, in plain terms</h2>
+  <p>A <b>VLA</b> (vision-language-action model) is an AI that looks at camera images, reads an instruction
+  like <i>“put the bowl in the drawer”</i>, and outputs robot arm movements. Big VLAs (7&nbsp;billion parameters) do this well.
+  Our lab's model, <b>SmolVLA</b>, is 15× smaller (450&nbsp;million) — cheap and fast, but it completes only
+  <b>49%</b> of long multi-step tasks in the standard simulated benchmark (LIBERO-Long), where the big models reach ~97%.
+  The mission: find a <b>genuinely new</b> add-on mechanism — never tried in robotics AI — that closes part of that gap
+  without retraining the big “brain” (the backbone stays frozen), publishable in a top journal.</p>
+</section>
+
+<!-- ============ BOTTLENECKS ============ -->
+<section>
+  <h2>2 · What is actually broken in today's robot AIs</h2>
+  <p class="sub">Documented failures from 2025–26 benchmark studies. The bars show how many percentage points of
+  success rate vanish when one thing changes. These are the targets any new idea must hit.</p>
+  <div class="chart">
+    <svg width="660" height="150" viewBox="0 0 660 150" role="img" aria-label="Documented success-rate drops">
+      <!-- rows: label 190px, bars scale 91pt -> 420px -->
+      <g font-size="9" font-family="system-ui, sans-serif">
+        <!-- row 1 -->
+        <text x="185" y="22" text-anchor="end" fill="#0b0b0b">Move the camera slightly</text>
+        <rect x="195" y="12" width="420" height="14" rx="4" fill="#2a78d6"/>
+        <text x="609" y="22" text-anchor="end" fill="#ffffff" font-weight="600">−91 pts</text>
+        <text x="195" y="38" fill="#898781" font-size="8">UniVLA: 95.2% → 4.3% (LIBERO-Plus, arXiv 2510.13626)</text>
+        <!-- row 2 -->
+        <text x="185" y="60" text-anchor="end" fill="#0b0b0b">Start the robot arm elsewhere</text>
+        <rect x="195" y="50" width="404" height="14" rx="4" fill="#2a78d6"/>
+        <text x="593" y="60" text-anchor="end" fill="#ffffff" font-weight="600">−88 pts</text>
+        <text x="195" y="76" fill="#898781" font-size="8">pi0: 94.2% → 6.6% (LIBERO-Plus)</text>
+        <!-- row 3 -->
+        <text x="185" y="98" text-anchor="end" fill="#0b0b0b">Vary the scene generally</text>
+        <rect x="195" y="88" width="415" height="14" rx="4" fill="#2a78d6"/>
+        <text x="604" y="98" text-anchor="end" fill="#ffffff" font-weight="600">−90 pts</text>
+        <text x="195" y="114" fill="#898781" font-size="8">models above 90% collapse to 0% (LIBERO-PRO, arXiv 2510.03827)</text>
+        <!-- row 4 -->
+        <text x="185" y="136" text-anchor="end" fill="#0b0b0b">Long multi-step tasks, small model</text>
+        <rect x="195" y="126" width="222" height="14" rx="4" fill="#2a78d6"/>
+        <text x="411" y="136" text-anchor="end" fill="#ffffff" font-weight="600">−48 pts</text>
+        <text x="425" y="136" fill="#898781" font-size="8">our SmolVLA 49.0% vs a 7B model's 97.1%</text>
+      </g>
+    </svg>
+    <p class="caption">Success-rate drop, percentage points. Every figure traces to a fetched source or our own logged run — nothing estimated.</p>
+  </div>
+  <p>The pattern that matters: today's models don't fail because they “think” wrongly — they fail because
+  <b>small changes to what the camera sees scramble their perception</b>, and because on long tasks
+  <b>one silent slip early on ruins everything after it</b>.</p>
+</section>
+
+<!-- ============ PROCESS ============ -->
+<section class="pagebreak">
+  <h2>3 · How the search worked</h2>
+  <p>Fourteen scanner agents mined mechanisms from fields that have never touched robot AI — control theory,
+  neuroscience, information theory, computer architecture, databases, immunology, networking. Every surviving idea then had to pass
+  <b>six gates</b> (Is it new? Does it hit a real problem? Is the reasoning sound? Does it generalize? Is it efficient? Would a journal accept it?)
+  and finally <b>three rounds of adversarial debate</b> where reviewer-agents tried to kill it. When everything died,
+  two independent “surgeon” agents engineered 8 revised ideas specifically to answer the recorded attacks — and those
+  went through the same gauntlet.</p>
+  <div class="chart">
+    <svg width="660" height="130" viewBox="0 0 660 130" role="img" aria-label="Idea funnel">
+      <g font-size="9" font-family="system-ui, sans-serif">
+        <text x="150" y="20" text-anchor="end" fill="#0b0b0b">Ideas generated</text>
+        <rect x="160" y="10" width="440" height="15" rx="4" fill="#86b6ef"/>
+        <text x="594" y="21" text-anchor="end" fill="#0b0b0b" font-weight="600">67</text>
+        <text x="150" y="50" text-anchor="end" fill="#0b0b0b">Reached the six gates</text>
+        <rect x="160" y="40" width="414" height="15" rx="4" fill="#5598e7"/>
+        <text x="568" y="51" text-anchor="end" fill="#ffffff" font-weight="600">63</text>
+        <text x="150" y="80" text-anchor="end" fill="#0b0b0b">Passed all six gates</text>
+        <rect x="160" y="70" width="26" height="15" rx="4" fill="#2a78d6"/>
+        <text x="192" y="81" fill="#0b0b0b" font-weight="600">4</text>
+        <text x="150" y="110" text-anchor="end" fill="#0b0b0b">Survived the debates</text>
+        <rect x="160" y="100" width="2" height="15" fill="#1c5cab"/>
+        <text x="168" y="111" fill="#0b0b0b" font-weight="600">0</text>
+      </g>
+    </svg>
+    <p class="caption">The filter was deliberately as harsh as a top journal's review process. 4 ideas that were audit-killed with strong evidence never reached the gates.</p>
+  </div>
+</section>
+
+<!-- ============ WHY THINGS DIED ============ -->
+<section>
+  <h2>4 · Where ideas died — and the lessons that generalize</h2>
+  <div class="chart">
+    <svg width="660" height="128" viewBox="0 0 660 128" role="img" aria-label="Gate failures">
+      <g font-size="9" font-family="system-ui, sans-serif">
+        <text x="185" y="18" text-anchor="end" fill="#0b0b0b">“A journal wouldn't accept it”</text>
+        <rect x="195" y="8" width="420" height="12" rx="4" fill="#2a78d6"/>
+        <text x="609" y="18" text-anchor="end" fill="#ffffff" font-weight="600">57</text>
+        <text x="185" y="38" text-anchor="end" fill="#0b0b0b">“Someone already did it”</text>
+        <rect x="195" y="28" width="361" height="12" rx="4" fill="#2a78d6"/>
+        <text x="550" y="38" text-anchor="end" fill="#ffffff" font-weight="600">49</text>
+        <text x="185" y="58" text-anchor="end" fill="#0b0b0b">“Doesn't hit a real bottleneck”</text>
+        <rect x="195" y="48" width="206" height="12" rx="4" fill="#2a78d6"/>
+        <text x="395" y="58" text-anchor="end" fill="#ffffff" font-weight="600">28</text>
+        <text x="185" y="78" text-anchor="end" fill="#0b0b0b">“The causal story doesn't hold”</text>
+        <rect x="195" y="68" width="199" height="12" rx="4" fill="#2a78d6"/>
+        <text x="388" y="78" text-anchor="end" fill="#ffffff" font-weight="600">27</text>
+        <text x="185" y="98" text-anchor="end" fill="#0b0b0b">“Too costly / too narrow a win”</text>
+        <rect x="195" y="88" width="147" height="12" rx="4" fill="#2a78d6"/>
+        <text x="336" y="98" text-anchor="end" fill="#ffffff" font-weight="600">20</text>
+        <text x="185" y="118" text-anchor="end" fill="#0b0b0b">“Only works on one model”</text>
+        <rect x="195" y="108" width="66" height="12" rx="4" fill="#2a78d6"/>
+        <text x="255" y="118" text-anchor="end" fill="#ffffff" font-weight="600">9</text>
+      </g>
+    </svg>
+    <p class="caption">Number of candidates failing each gate (one idea can fail several), out of 63 gated.</p>
+  </div>
+  <h3>Five lessons the graveyard teaches (each verified across multiple kills)</h3>
+  <ol class="findings">
+    <li><b>You can't fix broken perception after the fact.</b> Every monitor, safety gate or corrector that sits <i>behind</i> the frozen vision system died the same death: the shifted camera corrupts its inputs too.</li>
+    <li><b>Fixes that need “example perturbations” collapse into data augmentation.</b> If your fix trains on varied lighting/views, then simply training the policy on that same data is a fair baseline — and it usually captures the gain.</li>
+    <li><b>One benchmark win counted three ways is still one win.</b> Ideas claiming success + robustness + generalization from the same measurement failed the multi-benefit requirement.</li>
+    <li><b>Borrowed formalisms must not degenerate.</b> Fancy machinery (evidence fusion, coding theory, database transactions) often reduces to a trivial gate or heuristic once instantiated on a robot policy.</li>
+    <li><b>The obvious idea-space is genuinely mined out (2025–26).</b> Test-time search, action tokenizers, replan schedulers, memory modules, adapters — all have named recent papers within one thin twist.</li>
+  </ol>
+</section>
+
+<!-- ============ WINNER ============ -->
+<section class="pagebreak">
+  <h2>5 · The winner: “Check &amp; Retry” (R4 — Declarative Postcondition Retry)</h2>
+  <div class="winner-box">
+  <p><b>The idea in one sentence:</b> after each sub-step, tiny add-on “checkers” (1.5M parameters — 0.3% extra) verify from the robot's own features that the sub-goal <i>physically happened</i> — did the drawer actually open? is the object actually in the gripper? — and if not, the robot <b>backs up and tries that step again</b> instead of blindly continuing.</p>
+  <div class="chart">
+    <svg width="660" height="176" viewBox="0 0 660 176" role="img" aria-label="R4 mechanism diagram">
+      <defs>
+        <marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#52514e"/></marker>
+      </defs>
+      <g font-family="system-ui, sans-serif" font-size="9">
+        <!-- frozen VLA -->
+        <rect x="8" y="30" width="130" height="52" rx="8" fill="none" stroke="#c3c2b7" stroke-width="1.4"/>
+        <text x="73" y="50" text-anchor="middle" fill="#0b0b0b" font-weight="600">SmolVLA 450M</text>
+        <text x="73" y="64" text-anchor="middle" fill="#52514e">frozen — untouched</text>
+        <!-- action chunk -->
+        <line x1="138" y1="56" x2="186" y2="56" stroke="#52514e" stroke-width="1.4" marker-end="url(#arr)"/>
+        <text x="162" y="46" text-anchor="middle" fill="#898781" font-size="8">actions</text>
+        <rect x="188" y="30" width="110" height="52" rx="8" fill="none" stroke="#c3c2b7" stroke-width="1.4"/>
+        <text x="243" y="50" text-anchor="middle" fill="#0b0b0b" font-weight="600">Robot executes</text>
+        <text x="243" y="64" text-anchor="middle" fill="#52514e">one sub-step</text>
+        <!-- checker -->
+        <line x1="298" y1="56" x2="346" y2="56" stroke="#52514e" stroke-width="1.4" marker-end="url(#arr)"/>
+        <rect x="348" y="24" width="150" height="64" rx="8" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.5"/>
+        <text x="423" y="44" text-anchor="middle" fill="#0b0b0b" font-weight="600">Checkers (+1.5M)</text>
+        <text x="423" y="58" text-anchor="middle" fill="#52514e">“did the drawer open?”</text>
+        <text x="423" y="71" text-anchor="middle" fill="#52514e">“is the object gripped?”</text>
+        <!-- pass -->
+        <line x1="498" y1="46" x2="560" y2="46" stroke="#006300" stroke-width="1.4" marker-end="url(#arr)"/>
+        <text x="530" y="38" text-anchor="middle" fill="#006300" font-weight="600" font-size="8.5">✓ passed</text>
+        <rect x="562" y="30" width="90" height="34" rx="8" fill="none" stroke="#c3c2b7" stroke-width="1.4"/>
+        <text x="607" y="51" text-anchor="middle" fill="#0b0b0b">next sub-step</text>
+        <!-- fail path -->
+        <line x1="423" y1="88" x2="423" y2="118" stroke="#d03b3b" stroke-width="1.4" marker-end="url(#arr)"/>
+        <text x="452" y="106" fill="#d03b3b" font-weight="600" font-size="8.5">✗ failed</text>
+        <rect x="330" y="120" width="186" height="34" rx="8" fill="none" stroke="#c3c2b7" stroke-width="1.4"/>
+        <text x="423" y="141" text-anchor="middle" fill="#0b0b0b">scripted retreat → retry once</text>
+        <line x1="330" y1="137" x2="243" y2="137" stroke="#52514e" stroke-width="1.4"/>
+        <line x1="243" y1="137" x2="243" y2="84" stroke="#52514e" stroke-width="1.4" marker-end="url(#arr)"/>
+        <text x="20" y="170" fill="#898781" font-size="8.5">Why it survived where 66 died: the retry changes the WORLD (the robot physically resets the situation) — it never has to trust corrupted perception twice in the same way.</text>
+      </g>
+    </svg>
+  </div>
+  <p><b>Why the committee picked it</b> (3 independent judges + chair, confidence 0.55): long tasks fail multiplicatively —
+  ten 93%-reliable steps compound to ~49%. One retry lifts each step's odds from <i>p</i> to <i>p(2−p)</i>
+  (e.g. 0.93 → 0.995), which is exactly the structure of our measured gap. Expected gain if the premise holds:
+  <b>+5 to +15 points on LIBERO-Long</b>. All three scoring lenses gave it the top expected-improvement score.</p>
+  <p><b>Its honest weakness:</b> “verify then retry” is classical robotics — the novelty gate failed it. So it publishes as a
+  rigorous <i>measurement + mechanism</i> paper (a quantified failure taxonomy of a small VLA, plus the fix), targeted at
+  <b>RA-L or TMLR</b> rather than a “new mechanism” headline at CoRL.</p>
+  <p style="margin-bottom:0;"><b>The first experiment is free:</b> re-label our existing 100 failed runs. If fewer than 25% failed
+  because of a silent unnoticed sub-step failure, the idea dies for $0 — and the failure taxonomy still publishes.</p>
+  </div>
+</section>
+
+<!-- ============ RANKING ============ -->
+<section>
+  <h2>6 · The final top 10</h2>
+  <div class="legend">
+    <span><span class="sw" style="background:#2a78d6"></span>Engineered this run (revision round)</span>
+    <span><span class="sw" style="background:#1baf7a"></span>Mined from the 14-field scan</span>
+  </div>
+  <div class="chart">
+    <svg width="660" height="238" viewBox="0 0 660 238" role="img" aria-label="Top 10 committee scores">
+      <g font-size="9" font-family="system-ui, sans-serif">
+        <text x="205" y="18" text-anchor="end" fill="#0b0b0b" font-weight="600">1 · R4 Check &amp; Retry ★</text>
+        <rect x="215" y="9" width="400" height="12" rx="4" fill="#2a78d6"/>
+        <text x="609" y="19" text-anchor="end" fill="#ffffff" font-weight="600">29.5</text>
+        <text x="205" y="41" text-anchor="end" fill="#0b0b0b">2 · R1 Nuisance Recalibration</text>
+        <rect x="215" y="32" width="355" height="12" rx="4" fill="#2a78d6"/>
+        <text x="564" y="42" text-anchor="end" fill="#ffffff" font-weight="600">26.2</text>
+        <text x="205" y="64" text-anchor="end" fill="#0b0b0b">3 · S3 Kernel Fast-Binding</text>
+        <rect x="215" y="55" width="323" height="12" rx="4" fill="#2a78d6"/>
+        <text x="532" y="65" text-anchor="end" fill="#ffffff" font-weight="600">23.8</text>
+        <text x="205" y="87" text-anchor="end" fill="#0b0b0b">4 · R3 Consensus-Split Decoding</text>
+        <rect x="215" y="78" width="323" height="12" rx="4" fill="#2a78d6"/>
+        <text x="532" y="88" text-anchor="end" fill="#ffffff" font-weight="600">23.8</text>
+        <text x="205" y="110" text-anchor="end" fill="#0b0b0b">5 · R2 ProbeAnchor</text>
+        <rect x="215" y="101" width="328" height="12" rx="4" fill="#2a78d6"/>
+        <text x="537" y="111" text-anchor="end" fill="#ffffff" font-weight="600">24.2†</text>
+        <text x="205" y="133" text-anchor="end" fill="#0b0b0b">6 · C21 Associative Memory Repair</text>
+        <rect x="215" y="124" width="316" height="12" rx="4" fill="#1baf7a"/>
+        <text x="525" y="134" text-anchor="end" fill="#ffffff" font-weight="600">23.3</text>
+        <text x="205" y="156" text-anchor="end" fill="#0b0b0b">7 · C26 Self-Conditioned Flow</text>
+        <rect x="215" y="147" width="294" height="12" rx="4" fill="#1baf7a"/>
+        <text x="503" y="157" text-anchor="end" fill="#ffffff" font-weight="600">21.7</text>
+        <text x="205" y="179" text-anchor="end" fill="#0b0b0b">8 · C20 Funnel-Gated Re-Inference</text>
+        <rect x="215" y="170" width="302" height="12" rx="4" fill="#1baf7a"/>
+        <text x="511" y="180" text-anchor="end" fill="#ffffff" font-weight="600">22.3†</text>
+        <text x="205" y="202" text-anchor="end" fill="#0b0b0b">9 · C12 Habit/Goal Blending</text>
+        <rect x="215" y="193" width="267" height="12" rx="4" fill="#1baf7a"/>
+        <text x="476" y="203" text-anchor="end" fill="#ffffff" font-weight="600">19.7</text>
+        <text x="205" y="225" text-anchor="end" fill="#0b0b0b">10 · C13 Information-Bottleneck Adapter</text>
+        <rect x="215" y="216" width="264" height="12" rx="4" fill="#1baf7a"/>
+        <text x="473" y="226" text-anchor="end" fill="#ffffff" font-weight="600">19.5</text>
+      </g>
+    </svg>
+    <p class="caption">Committee average across 7 scoring axes (novelty, expected gains, difficulty inverted, publishability, impact). † = chair demoted below arithmetic order for a load-bearing flaw. Full per-judge scores in the artifacts folder.</p>
+  </div>
+  <div class="cards">
+    <div class="card"><span class="badge">Runner-up · R1</span>
+      <p style="margin:6px 0 0;font-size:9pt;">The <b>novelty lottery ticket</b>: re-calibrate perception once per episode using the first glance. Highest novelty score (5/5/5) but its core premise is likelier false than true — a ~1-day experiment decides. If it survives, it becomes the paper's headline and R4 the second contribution.</p></div>
+    <div class="card"><span class="badge">Runner-up · S3</span>
+      <p style="margin:6px 0 0;font-size:9pt;">Learn a new task from 10 demos <b>without changing any weights</b> (kernel lookup + knowing-when-to-abstain). Well-posed and cheap to falsify; ceiling: its parts are known techniques, so it supports rather than leads a paper.</p></div>
+  </div>
+</section>
+
+<!-- ============ ROADMAP ============ -->
+<section class="pagebreak">
+  <h2>7 · The plan: kill cheaply, build only what survives</h2>
+  <p class="sub">Every step has a pre-registered “kill criterion” decided before it runs — the project's standing rule. All compute on the lab's A100 GPU (verified free).</p>
+  <table>
+    <tr><th style="width:34px;">Step</th><th>What happens</th><th class="num" style="width:70px;">GPU-hours</th><th>Dies immediately if…</th></tr>
+    <tr><td>0a</td><td><b>R4 free test</b> — re-label the 100 existing failure logs</td><td class="num">0</td><td>&lt;25% of failures are silent sub-step slips</td></tr>
+    <tr><td>0b</td><td>R3 side-experiment — decompose baseline randomness (valuable either way)</td><td class="num">2</td><td>—</td></tr>
+    <tr><td>1</td><td>Train R4's checker probes on cached features</td><td class="num">2</td><td>pose error &gt;1cm, or &gt;3% false alarms</td></tr>
+    <tr><td>2</td><td>R4 pilot — retreat-and-retry on 3 long tasks</td><td class="num">12</td><td>a retry isn't better than a fresh attempt</td></tr>
+    <tr><td>3</td><td>R1 premise test — is the perception shift repairable at all?</td><td class="num">18–24</td><td>shift lies outside the learned repair space (~60% likely)</td></tr>
+    <tr><td>4</td><td>S3 premise test — offline, on cached features</td><td class="num">1–2</td><td>lookup reconstruction is 1.5× worse than fine-tuning</td></tr>
+    <tr><td>5</td><td><b>Full build of survivors</b> — 500 runs × 3 seeds, honest matched-budget scoring</td><td class="num">40–80</td><td>standard statistics decide</td></tr>
+  </table>
+  <p class="caption" style="margin-top:6px;">Likely total: ~20–40 GPU-hours if only R4 survives (≈2–3 days); ~80–120 if all three do (≈1–2 weeks on the shared machine).</p>
+</section>
+
+<!-- ============ RISKS ============ -->
+<section>
+  <h2>8 · Honesty box: risks &amp; confidence</h2>
+  <table>
+    <tr><th style="width:44%;">Risk</th><th>Likelihood</th><th>What happens then</th></tr>
+    <tr><td>R4's free test kills the premise (failures are mostly early misperception, not silent slips)</td><td>~50%</td><td>The failure taxonomy still publishes as an honest measurement paper; the run's five lessons (§4) stand.</td></tr>
+    <tr><td>Retries eat the time budget and reviewers object</td><td>medium</td><td>Pre-registered matched-budget comparison already in the plan.</td></tr>
+    <tr><td>Someone publishes VLA verify-and-retry first</td><td>medium</td><td>Move fast; our unique asset is the reproduced-baseline failure taxonomy.</td></tr>
+  </table>
+  <p style="margin-top:8px;"><b>Committee confidence in the winner: 0.55.</b> Confidence this run produced a <i>publishable research program</i> (winner + fallback + verified negative findings): <b>medium-high</b>. Confidence any of this beats 7-billion-parameter models as a headline: <b>low</b> — that race is already lost to 2025's literature; the winnable race is reliability per parameter, honestly measured.</p>
+  <hr class="rule">
+  <p class="mut">Process: 7 orchestrated multi-agent workflows + 2 independent surgeon agents (~60 sub-agents; Sonnet workers, Fable-5 judges, Opus fallback) · every kill/keep/rank decision made by ≥3 independent agents · every number traced to a run log or fetched source · full machine-readable record in <span style="font-family:monospace;">reports/mission-artifacts-2026-07-10/</span> · companion technical report: <span style="font-family:monospace;">reports/vla-novelty-mission-2026-07-10.md</span></p>
+</section>
+
+</div>
+</body>
+</html>
